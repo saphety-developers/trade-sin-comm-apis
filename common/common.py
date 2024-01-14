@@ -70,6 +70,10 @@ def command_line_arguments_to_configuration3(args: Namespace) -> Configuration3:
     config.document_types = args.document_types
   if hasattr(args, 'output_format'):
     config.output_format = args.output_format 
+  if hasattr(args, 'rows_per_page'):
+    config.rows_per_page = args.rows_per_page
+  if hasattr(args, 'page_number'):
+    config.page_number = args.page_number 
 
   config.no_output_header = args.no_output_header
   config.log_folder = args.log_folder
@@ -87,6 +91,23 @@ def get_endpoint_entry_by_alias(alias: str) -> str:
     'sin-prd': 'https://doc-server.saphety.com/Doc.WebApi.Services'
   }
   return endpoints_dict.get(alias, None)
+
+def is_valid_zero_or_positive_integer(value):
+    if value is None:
+      return False
+    try:
+        num = int(value)
+        return num >= 0
+    except ValueError:
+        return False
+def is_valid_positive_integer(value):
+    if value is None:
+      return False
+    try:
+        num = int(value)
+        return num > 0
+    except ValueError:
+        return False
 
 def is_valid_url(url) -> bool:
     try:
@@ -325,6 +346,8 @@ def parse_args_for_sin_search():
     parser.add_argument('--sender-status-codes',metavar='<Document status>', help='Sender document status to filter (or all if not filled)', nargs="+")
     parser.add_argument('--receiver-status-codes',metavar='<Document status>', help='Receiver document status to filter (or all if not filled)', nargs="+")
     parser.add_argument('--document-types',metavar='<Document type>', help='Document types to filter (or all if not filled)', nargs="+")
+    parser.add_argument('--rows-per-page', metavar='<Rows per page>', required=False, help='Pagination::Number of documents for each page search. Defaults to 10.')
+    parser.add_argument('--page-number', metavar='<Page number>', required=False, help='Pagination::Number of the page to retrieve (0 based). Defaults to 0.')
     parser.add_argument('--log-folder', type=str,  metavar='<log folder>', help='Logging folder. Defaults to <current folder>/log')
     parser.add_argument('--log-level', type=str, default='info', choices=['debug', 'info', 'warning', 'error', 'critical'], help='Logging level')
     parser.add_argument('--output-format', type=str, help='Output as csv or table. Defaults to csv')
@@ -350,6 +373,8 @@ sample usage with all arguments:
                  --sender-status-codes 1 2 3 4
                  --receiver-status-codes 1 2 3 4
                  --document-types 1 2 3 4
+                 --rows-per-page 20
+                 --page-number 2
                  --output-format {csv, table}
                  --no-output-header removes the header row in output
                  --log-level info 

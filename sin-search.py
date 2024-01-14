@@ -55,6 +55,11 @@ if not is_valid_date(config.creation_date_start):
     config.creation_date_start = '2023-11-20' #get_past_date_as_string(days_behind=7)
 if not not is_valid_date(config.creation_date_end):
     config.creation_date_end = get_current_date_as_string()
+if not is_valid_positive_integer(config.rows_per_page):
+    config.rows_per_page = '10'
+if not is_valid_zero_or_positive_integer(config.page_number):
+    config.page_number = '1'
+
 set_logging()
 
 log_app_sin_search_starting(config)
@@ -75,8 +80,8 @@ if token:
             'ReceiverDocumentStatusCodes': config.receiver_document_status,
             'DocumentsTypeIds': config.document_types
         },
-        "PageNumber": 0,
-        "RowsPerPage": 9999
+        "PageNumber": config.page_number,
+        "RowsPerPage": config.rows_per_page
       }
     documents = search_documents(token, criteria)
     count = count_documents (token, criteria["RestrictionCriteria"])

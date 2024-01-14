@@ -75,6 +75,8 @@ class Configuration3:
                  sender_document_status = None,
                  receiver_document_status = None,                         
                  document_types = None,
+                 rows_per_page = '10',
+                 page_number = '0',
                  output_format = 'csv',
                  no_output_header = False,                   
                  log_folder=''):
@@ -90,7 +92,9 @@ class Configuration3:
         self.receiver_entity_codes = receiver_entity_codes
         self.sender_document_status = sender_document_status
         self.receiver_document_status = receiver_document_status    
-        self.document_types = document_types                    
+        self.document_types = document_types
+        self.rows_per_page = rows_per_page
+        self.page_number = page_number                
         self.endpoint = endpoint
         self.output_format = output_format
         self.no_output_header = no_output_header
@@ -114,6 +118,8 @@ class Configuration3:
         f"sender_document_status='{self.sender_document_status}')"
         f"receiver_document_status='{self.receiver_document_status}')"        
         f"document_types='{self.document_types}')"            
+        f"rows_per_page='{self.rows_perpage}')"            
+        f"page_number='{self.page_number}')"            
         f"output_format='{self.output_format}')"    
         f"no_output_header='{self.no_output_header}')"    
         )
