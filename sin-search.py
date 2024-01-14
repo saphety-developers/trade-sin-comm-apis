@@ -84,7 +84,8 @@ if token:
         "PageNumber": config.page_number,
         "RowsPerPage": config.rows_per_page
       }
-    documents = search_documents(token, criteria)
+    if not config.count_only:
+        documents = search_documents(token, criteria)
     count = count_documents (token, criteria["RestrictionCriteria"])
     print(f'Number of documents: "{count}"')
 
@@ -110,13 +111,13 @@ if token:
     ]
 
     # Generate CSV for the provided document list and properties
-    csv_data = generate_csv(documents, properties_list, config.no_output_header)
-
-    # Print the generated CSV
-    if config.output_format == 'table':
-        print_csv_as_table(csv_data, 10)
-    else:
-        print(csv_data)
+    if not config.count_only:
+        csv_data = generate_csv(documents, properties_list, config.no_output_header)
+        # Print the generated CSV
+        if config.output_format == 'table':
+            print_csv_as_table(csv_data, 10)
+        else:
+            print(csv_data)
 else:
     log_could_not_get_token()
 log_app_sin_search_ending()

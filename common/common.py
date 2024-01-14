@@ -78,6 +78,7 @@ def command_line_arguments_to_configuration3(args: Namespace) -> Configuration3:
     config.page_number = args.page_number 
 
   config.no_output_header = args.no_output_header
+  config.count_only = args.count_only
   config.log_folder = args.log_folder
   config.print_app_name = args.no_app_name
   config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
@@ -351,6 +352,7 @@ def parse_args_for_sin_search():
     parser.add_argument('--origin-system-code',metavar='<Origin system>', required=False, help='Origin system code (ex: Trade comms endpoint)')
     parser.add_argument('--rows-per-page', metavar='<Rows per page>', required=False, help='Pagination::Number of documents for each page search. Defaults to 10.')
     parser.add_argument('--page-number', metavar='<Page number>', required=False, help='Pagination::Number of the page to retrieve (0 based). Defaults to 0.')
+    parser.add_argument('--count-only', action='store_true', help='Call only the count service')
     parser.add_argument('--log-folder', type=str,  metavar='<log folder>', help='Logging folder. Defaults to <current folder>/log')
     parser.add_argument('--log-level', type=str, default='info', choices=['debug', 'info', 'warning', 'error', 'critical'], help='Logging level')
     parser.add_argument('--output-format', type=str, help='Output as csv or table. Defaults to csv')
@@ -379,6 +381,7 @@ sample usage with all arguments:
                  --origin-system-code TRADE_COMMS_SENDER
                  --rows-per-page 20
                  --page-number 2
+                 --count-only
                  --output-format {csv, table}
                  --no-output-header removes the header row in output
                  --log-level info 

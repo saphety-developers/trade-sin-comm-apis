@@ -78,6 +78,7 @@ class Configuration3:
                  origin_system_code = None,
                  rows_per_page = '10',
                  page_number = '0',
+                 count_only = False,
                  output_format = 'csv',
                  no_output_header = False,                   
                  log_folder=''):
@@ -96,7 +97,8 @@ class Configuration3:
         self.document_types = document_types
         self.origin_system_code = origin_system_code
         self.rows_per_page = rows_per_page
-        self.page_number = page_number                
+        self.page_number = page_number
+        self.count_only = count_only             
         self.endpoint = endpoint
         self.output_format = output_format
         self.no_output_header = no_output_header
@@ -104,13 +106,11 @@ class Configuration3:
     def __str__(self):
         return (
         f"Configuration(log_level={self.log_level}, "
-        f"keep_alive={self.keep_alive}, "
         f"user='{self.user}', "
         f"password='{self.password}', "
         f"print_app_name='{self.print_app_name}')"
         f"endpoint='{self.endpoint}')"
         f"log_folder='{self.log_folder}')"
-        f"include_read='{self.include_read}')"
         f"creation_date_start='{self.creation_date_start}')"
         f"creation_date_end='{self.creation_date_end}')"
         f"sender_vats='{self.sender_vats}')"
@@ -121,8 +121,9 @@ class Configuration3:
         f"receiver_document_status='{self.receiver_document_status}')"        
         f"document_types='{self.document_types}')"            
         f"origin_system_code='{self.origin_system_code}')"            
-        f"rows_per_page='{self.rows_perpage}')"            
+        f"rows_per_page='{self.rows_per_page}')"            
         f"page_number='{self.page_number}')"            
+        f"count_only='{self.count_only}')"            
         f"output_format='{self.output_format}')"    
         f"no_output_header='{self.no_output_header}')"    
         )
