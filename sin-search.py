@@ -78,7 +78,8 @@ if token:
             'ReceiverEntityCodes': config.receiver_entity_codes,                 
             'SenderDocumentStatusCodes': config.sender_document_status,
             'ReceiverDocumentStatusCodes': config.receiver_document_status,
-            'DocumentsTypeIds': config.document_types
+            'DocumentsTypeIds': config.document_types,
+            'OriginSystemCode': config.origin_system_code
         },
         "PageNumber": config.page_number,
         "RowsPerPage": config.rows_per_page

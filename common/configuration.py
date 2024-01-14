@@ -75,6 +75,7 @@ class Configuration3:
                  sender_document_status = None,
                  receiver_document_status = None,                         
                  document_types = None,
+                 origin_system_code = None,
                  rows_per_page = '10',
                  page_number = '0',
                  output_format = 'csv',
@@ -93,6 +94,7 @@ class Configuration3:
         self.sender_document_status = sender_document_status
         self.receiver_document_status = receiver_document_status    
         self.document_types = document_types
+        self.origin_system_code = origin_system_code
         self.rows_per_page = rows_per_page
         self.page_number = page_number                
         self.endpoint = endpoint
@@ -118,6 +120,7 @@ class Configuration3:
         f"sender_document_status='{self.sender_document_status}')"
         f"receiver_document_status='{self.receiver_document_status}')"        
         f"document_types='{self.document_types}')"            
+        f"origin_system_code='{self.origin_system_code}')"            
         f"rows_per_page='{self.rows_perpage}')"            
         f"page_number='{self.page_number}')"            
         f"output_format='{self.output_format}')"    

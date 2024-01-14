@@ -68,6 +68,8 @@ def command_line_arguments_to_configuration3(args: Namespace) -> Configuration3:
     config.receiver_document_status = args.receiver_document_status 
   if hasattr(args, 'document_types'):
     config.document_types = args.document_types
+  if hasattr(args, 'origin_system_code'):
+    config.origin_system_code = args.origin_system_code
   if hasattr(args, 'output_format'):
     config.output_format = args.output_format 
   if hasattr(args, 'rows_per_page'):
@@ -346,6 +348,7 @@ def parse_args_for_sin_search():
     parser.add_argument('--sender-status-codes',metavar='<Document status>', help='Sender document status to filter (or all if not filled)', nargs="+")
     parser.add_argument('--receiver-status-codes',metavar='<Document status>', help='Receiver document status to filter (or all if not filled)', nargs="+")
     parser.add_argument('--document-types',metavar='<Document type>', help='Document types to filter (or all if not filled)', nargs="+")
+    parser.add_argument('--origin-system-code',metavar='<Origin system>', required=False, help='Origin system code (ex: Trade comms endpoint)')
     parser.add_argument('--rows-per-page', metavar='<Rows per page>', required=False, help='Pagination::Number of documents for each page search. Defaults to 10.')
     parser.add_argument('--page-number', metavar='<Page number>', required=False, help='Pagination::Number of the page to retrieve (0 based). Defaults to 0.')
     parser.add_argument('--log-folder', type=str,  metavar='<log folder>', help='Logging folder. Defaults to <current folder>/log')
@@ -373,6 +376,7 @@ sample usage with all arguments:
                  --sender-status-codes 1 2 3 4
                  --receiver-status-codes 1 2 3 4
                  --document-types 1 2 3 4
+                 --origin-system-code TRADE_COMMS_SENDER
                  --rows-per-page 20
                  --page-number 2
                  --output-format {csv, table}
