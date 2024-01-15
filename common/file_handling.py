@@ -16,6 +16,15 @@ def list_files(directory) -> list:
             filepaths.append(filepath)
     return filepaths
 
+def is_text(data):
+    try:
+        # Attempt to decode the data as UTF-8
+        data.decode('utf-8')
+        return True
+    except UnicodeDecodeError:
+        # If decoding fails, it's binary data
+        return False
+
 def save_file(filepath, data):
     """
     Saves data to a file at the specified path, appending a suffix to the file name if a file with the same name already exists.
@@ -27,7 +36,12 @@ def save_file(filepath, data):
             while os.path.exists(filepath):
                 filepath = f"{filename}_{suffix}{extension}"
                 suffix += 1
-        with open(filepath, 'wb') as file:
+
+        is_text_data = is_text(data)
+
+        mode = 'w' if is_text_data else 'wb'
+        
+        with open(filepath, mode) as file:
             file.write(data)
     except Exception as e:
         print(f"Error saving file:{filepath} - {e}")
