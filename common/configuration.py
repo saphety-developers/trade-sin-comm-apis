@@ -3,6 +3,8 @@ class Configuration:
                  keep_alive=False,
                  user='',
                  password='',
+                 app_key='',
+                 app_secret='',
                  out_folder='',
                  header_x_operational_endpoint_partner_id=None,
                  in_folder='',
@@ -12,6 +14,7 @@ class Configuration:
                  save_in_history = False,
                  polling_interval=480,
                  endpoint='',
+                 api_version='v1',
                  in_history = False,
                  include_read = False,
                  start_date =None,
@@ -22,6 +25,8 @@ class Configuration:
         self.keep_alive = keep_alive
         self.user = user
         self.password = password
+        self.app_key = app_key
+        self.app_secret = app_secret
         self.print_app_name = print_app_name
         self.save_out_history = save_out_history
         self.save_in_history = save_in_history
@@ -35,6 +40,7 @@ class Configuration:
         self.start_date = start_date
         self.end_date = end_date
         self.endpoint = endpoint
+        self.api_version = api_version
         self.destination_entity_code = destination_entity_code
         self.log_folder = log_folder
     def __str__(self):
@@ -43,6 +49,8 @@ class Configuration:
         f"keep_alive={self.keep_alive}, "
         f"user='{self.user}', "
         f"password='{self.password}', "
+        f"app_key='{self.app_key}', "
+        f"app_secret='{self.app_secret}', "
         f"print_app_name='{self.print_app_name}')"
         f"save_out_history='{self.save_out_history}')"
         f"save_in_history='{self.save_in_history}')"
@@ -53,6 +61,7 @@ class Configuration:
         f"out_folder_history='{self.out_folder_history}')"
         f"polling_interval='{self.polling_interval}')"
         f"endpoint='{self.endpoint}')"
+        f"api_version='{self.api_version}')"
         f"log_folder='{self.log_folder}')"
         f"include_read='{self.include_read}')"
         f"start_date='{self.start_date}')"
