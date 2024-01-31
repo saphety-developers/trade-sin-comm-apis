@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import json
+import uuid
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_cn_push
 from apis.cn_copai import get_cn_coapi_token, cn_send_document
@@ -15,6 +16,9 @@ DEFAULT_LOG_FOLDER_NAME = 'log'
 DEFAULT_OUT_FOLDER_HISTORY_NAME = 'out_history'
 DEFAULT_POLLING_INTERVAL_SECONDS = 30 # seconds
 APP_NAME = 'cn-push'
+# defne a constant that is an array of strings.
+AVAILABLE_FORMAT_IDS = ['FR-UBL-1.0','IT-SCI-1.0','IT-FatturaPa-1.0','SA-SCI-1.0','SA-UBL-1.0','RO-SCI-1.0']
+AVAILABLE_DOC_TYPES = ['Invoice','DebitNote','CreditNote']
 logger: logging.Logger
 config: Configuration
 
@@ -22,6 +26,13 @@ def set_logging():
     create_folder_if_no_exists(config.log_folder)
     log_file_path=get_log_file_path(APP_NAME, config.log_folder)
     configure_logging(log_file_path, config.log_level)
+
+# a function receives a string and an array of strings. returns the string that existe in the array and also must be contained in the string
+def get_string_from_array_of_strings(string_to_search_within: str, array_of_strings: list) -> str:
+    for s in array_of_strings:
+        if s in string_to_search_within:
+            return s
+    return None
 ##
 # push_message
 ##
@@ -35,17 +46,31 @@ def push_message(file_path: str, token: str) -> bool:
         return False
     file_name = os.path.basename(file_path)
     file_extension = file_name.split(".")[-1]
-    content_type = get_content_type_from_file_extension(file_extension) 
+    content_type = get_content_type_from_file_extension(file_extension)
 
+    format_id = get_string_from_array_of_strings(file_name, AVAILABLE_FORMAT_IDS)
+    if format_id is None:
+        format_id = config.format_id
+    doc_type_id = get_string_from_array_of_strings(file_name, AVAILABLE_DOC_TYPES)
+    if doc_type_id is None:
+        doc_type_id = config.doc_type_id
+    x_correlationId = str(uuid.uuid4())
+    x_originSystemId = 'My-Origin-System-' + file_name
+    
     result = cn_send_document (service_url=service_url,
                       token=token,
                       content_type=content_type,
                       file_in_base64=base64_contents,
-                      file_name=file_name)
-    print(json.dumps(result, indent=4))
+                      file_name=file_name,
+                      format_id=format_id,
+                      document_type=doc_type_id,
+                      x_correlationId=x_correlationId,
+                      x_originSystemId=x_originSystemId)
+    #print(json.dumps(result, indent=4))
     
     if result["success"] == True:
-        log_console_and_log_debug(f'File {file_path} uploaded')
+        log_console_and_log_debug(f'File {file_path} uploaded with x-correlationId: {x_correlationId}')
+        log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
         if config.save_out_history:
             history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
             create_folder_if_no_exists(history_folder_for_file)

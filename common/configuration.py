@@ -20,6 +20,8 @@ class Configuration:
                  start_date =None,
                  end_date = None,
                  destination_entity_code = None,
+                 format_id = '',
+                 doc_type_id = '',
                  log_folder=''):
         self.log_level = log_level
         self.keep_alive = keep_alive
@@ -42,6 +44,8 @@ class Configuration:
         self.endpoint = endpoint
         self.api_version = api_version
         self.destination_entity_code = destination_entity_code
+        self.format_id = format_id
+        self.doc_type_id = doc_type_id
         self.log_folder = log_folder
     def __str__(self):
         return (
@@ -51,22 +55,25 @@ class Configuration:
         f"password='{self.password}', "
         f"app_key='{self.app_key}', "
         f"app_secret='{self.app_secret}', "
-        f"print_app_name='{self.print_app_name}')"
-        f"save_out_history='{self.save_out_history}')"
-        f"save_in_history='{self.save_in_history}')"
-        f"in_history='{self.in_history}')"
-        f"out_folder='{self.out_folder}')"
-        f"header_x_operational_endpoint_partner_id='{self.header_x_operational_endpoint_partner_id}')"
-        f"in_folder='{self.in_folder}')"
-        f"out_folder_history='{self.out_folder_history}')"
-        f"polling_interval='{self.polling_interval}')"
-        f"endpoint='{self.endpoint}')"
-        f"api_version='{self.api_version}')"
-        f"log_folder='{self.log_folder}')"
-        f"include_read='{self.include_read}')"
-        f"start_date='{self.start_date}')"
-        f"destination_entity_code='{self.destination_entity_code}')"
-        f"end_date='{self.end_date}')"
+        f"print_app_name='{self.print_app_name}', "
+        f"save_out_history='{self.save_out_history}', "
+        f"save_in_history='{self.save_in_history}', "
+        f"in_history='{self.in_history}', "
+        f"out_folder='{self.out_folder}', "
+        f"header_x_operational_endpoint_partner_id='{self.header_x_operational_endpoint_partner_id}', "
+        f"in_folder='{self.in_folder}', "
+        f"out_folder_history='{self.out_folder_history}', "
+        f"polling_interval='{self.polling_interval}', "
+        f"endpoint='{self.endpoint}', "
+        f"api_version='{self.api_version}', "
+        f"log_folder='{self.log_folder}', "
+        f"include_read='{self.include_read}', "
+        f"start_date='{self.start_date}', "
+        f"destination_entity_code='{self.destination_entity_code}', "
+        f"end_date='{self.end_date}', "
+        f"format_id='{self.format_id}', "
+        f"doc_type_id='{self.doc_type_id}', "
+        f"end_date='{self.end_date}'"
         )
 
 class Configuration3:

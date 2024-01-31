@@ -2,6 +2,7 @@ import json
 import logging
 import requests
 import base64
+import uuid
 
 def get_cn_coapi_token(service_url: str, app_key: str, app_secret: str) -> str:
     logger = logging.getLogger('get_cn_copai_token')
@@ -36,27 +37,42 @@ def get_cn_coapi_token(service_url: str, app_key: str, app_secret: str) -> str:
          logger.exception("Could not retrieve token. Response serialization error: %s", e)
          return None
 
-def cn_send_document(service_url:str, token: str, content_type:str, file_in_base64:str, file_name) -> str:
+def cn_send_document(service_url:str,
+                     token: str,
+                     content_type:str,
+                     file_in_base64:str,
+                     file_name:str,
+                     format_id:str,
+                     document_type:str,
+                     x_correlationId:str,
+                     x_originSystemId:str) -> str:
 
     request = {
-        'formatId': 'IT-SCI-1.0',
+        'formatId': format_id,
         'businessProcess': {
-            'type': 'Invoice',
+            'type': document_type,
             'senderTransactionId': 'My-Transaction-Id-For-Invoice-0001'
         },
         'content': {
             'data': file_in_base64,
             'type': content_type,
-            'name': 'My-File-Name-Invoice-0001.xml'
+            'name': file_name
         }
     }
     request_data=json.dumps(request)
-    print(json.dumps(request, indent=4))
+    if (x_correlationId is None):
+        x_correlationId = str(uuid.uuid4())
+
+    if (x_originSystemId is None):
+        x_originSystemId = 'My-Origin-System-' + file_name
+
+    headers = { 'content-type': 'application/json',
+               'Authorization': 'Bearer ' + token,
+               'x-correlationId': x_correlationId,
+               'x-originSystemId': x_originSystemId}
     
-    headers = { 'content-type': 'application/json', 'Authorization': 'Bearer ' + token }
-    #if (header_x_operational_endpoint_partner_id is not None):
-    #    headers['X-Operational-Endpoint-Partner-Id'] = header_x_operational_endpoint_partner_id
     #print(json.dumps(headers, indent=4))
+    #print(json.dumps(request, indent=4))
     response = requests.request("POST", service_url, data=request_data, headers=headers)
     return response.json()
     #print(json.dumps(json_response, indent=4))
