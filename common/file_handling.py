@@ -25,26 +25,42 @@ def is_text(data):
         # If decoding fails, it's binary data
         return False
 
+def get_next_non_colinging_filename(filepath):
+    """
+    Returns a filename that does not collide with an existing file.
+    """
+    filename, extension = os.path.splitext(filepath)
+    suffix = 1
+    while os.path.exists(filepath):
+        filepath = f"{filename}_{suffix}{extension}"
+        suffix += 1
+    return filepath
+
 def save_file(filepath, data):
     """
     Saves data to a file at the specified path, appending a suffix to the file name if a file with the same name already exists.
     """
     try:
-        if os.path.exists(filepath):
-            filename, extension = os.path.splitext(filepath)
-            suffix = 1
-            while os.path.exists(filepath):
-                filepath = f"{filename}_{suffix}{extension}"
-                suffix += 1
-
+        filepath = get_next_non_colinging_filename (filepath)
         is_text_data = is_text(data)
-
         mode = 'w' if is_text_data else 'wb'
         
         with open(filepath, mode) as file:
             file.write(data)
     except Exception as e:
         print(f"Error saving file:{filepath} - {e}")
+
+def save_text_to_file(filepath, text):
+    """
+    Save the given text to a file.
+    """
+    try:
+        filepath = get_next_non_colinging_filename (filepath)
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(text)
+    except Exception as e:
+        print(f"Error saving file:{filepath} - {e}")
+
 
 def move_file(src_path, dst_folder):
     """

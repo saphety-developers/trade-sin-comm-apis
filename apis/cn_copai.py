@@ -76,3 +76,14 @@ def cn_send_document(service_url:str,
     response = requests.request("POST", service_url, data=request_data, headers=headers)
     return response.json()
     #print(json.dumps(json_response, indent=4))
+
+def cn_get_notifications(service_url: str, token: str, wait_timeout: int, prefetch_quantity: int) -> str:
+    logger = logging.getLogger('cn_get_notifications')
+    service_url = service_url + '?waitTimeOut=' + str(wait_timeout) + '&prefetchQuantity=' + str(prefetch_quantity)
+    x_correlationId = str(uuid.uuid4())
+    headers = { 'Authorization': 'Bearer ' + token, 'x-correlationId': x_correlationId }
+    response = requests.request("GET", service_url, headers=headers)
+    logger.debug(f'Get notifications response: {response}')
+    json_response = json.loads(response.text)
+    logger.debug(f'Get notifications response serialized: {json.dumps(json_response, indent=4)}')
+    return response.json()

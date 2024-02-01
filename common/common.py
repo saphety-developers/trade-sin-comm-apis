@@ -110,6 +110,26 @@ def command_line_arguments_to_cn_push_configuration(args: Namespace) -> Configur
   config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
   return config
 
+def command_line_arguments_to_cn_pull_configuration(args: Namespace) -> Configuration:
+  config = Configuration()
+  config.app_key = args.app_key
+  config.app_secret = args.app_secret
+  config.keep_alive = args.keep_alive
+  config.log_level = args.log_level
+  if hasattr(args, 'save_in_history'):
+    config.save_in_history = args.save_in_history
+  if hasattr(args, 'in_folder'):
+    config.in_folder = args.in_folder
+  if hasattr(args, 'in_folder_history'):
+    config.in_history = args.in_folder_history
+  if hasattr(args, 'polling_interval'):
+    config.polling_interval = args.polling_interval
+  
+  config.log_folder = args.log_folder
+  config.print_app_name = args.no_app_name
+  config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
+  return config
+   
 def get_endpoint_entry_by_alias(alias: str) -> str:
   endpoints_dict = {
     'int': 'https://saphetydoc-int.saphety.com/TradeHttp/MessageServiceRest',
@@ -217,6 +237,13 @@ def log_app_sin_pull_starting(config: Configuration):
     if (config.in_history):
         log_console_and_log_debug(f'SIN api client starting - saving histoty set to "{config.in_history}"')
 
+def log_app_cn_pull_starting(config: Configuration):
+    log_console_and_log_debug(f'CN api client starting - pulling messages from "{config.endpoint}" every {config.polling_interval} seconds')
+    log_console_and_log_debug(f'CN api client starting - writting files to "{config.in_folder}"')
+    log_console_and_log_debug(f'CN api client starting - logging set to "{config.log_folder}"')
+    if (config.in_history):
+        log_console_and_log_debug(f'CN api client starting - saving histoty set to "{config.in_history}"')
+
 def log_app_sin_search_starting(config: Configuration):
     log_console_and_log_debug(f'SIN api client starting - searching documents from "{config.endpoint}"')
     log_console_and_log_debug(f'SIN api client starting - logging set to "{config.log_folder}"')
@@ -323,7 +350,48 @@ sample usage with all arguments:
     args = parser.parse_args()
     return args
 
+def parse_args_for_cn_pull():
+    # Create the argument parser
+    parser = argparse.ArgumentParser(description='CN public messaging api client (mka COAPI) - pull notifications from network')
 
+    # Add the arguments to the parser
+    parser.add_argument('--app-key', type=str, metavar='<app key from developer.sovos.com>', required=True, help='Register yous apps in developer.sovos.com')
+    parser.add_argument('--app-secret', type=str, metavar='<app secre from developer.sovos.com>', required=False, help='Register yous apps in developer.sovos.com')
+    parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='CN endpoints to pull messages to. Use alias for known environments: "cn-dev", "cn-uat", "cn-prd" or specify a custom endpoint...')
+    parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
+    parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for notifications in the network')
+    parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
+    parser.add_argument('--in-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/in')
+    parser.add_argument('--save-in-history', action='store_true', help='Backup files received from the network')
+    parser.add_argument('--in-folder-history', type=str, metavar='<download history folder>', required=False, help='Defaults to <current folder>/<app-key>/in_history')
+    parser.add_argument('--log-folder', type=str,  metavar='<log folder>', help='Logging folder. Defaults to <current folder>/log')
+    parser.add_argument('--log-level', type=str, default='info', choices=['debug', 'info', 'error'], help='Logging level')
+    parser.add_argument('--no-app-name', action='store_false', help='You will be missing the beautiful ascii art...')
+    # sample usage 
+    parser.usage = """\n %(prog)s --app-key <app-key> --endpoint {cn-dev, cn-uat, cn-prd, <url>}  [--app-secret <app secret>][other optinons]
+
+sample usage: 
+  %(prog)s  --app-key 6D9Ux2J4KPaFfTPe9tGlIUfPwcZF7fVI --app-secret kdeOJJPCiPsTWAGO --keep-alive --endpoint cn-dev
+
+sample usage with all arguments: 
+  %(prog)s  --app-key 6D9Ux2J4KPaFfTPe9tGlIUfPwcZF7fVI
+                 --app-secret kdeOJJPCiPsTWAGO 
+                 --endpoint https://api-internal.sovos.com
+                 --keep-alive 
+                 --polling-interval 30
+                 --in-folder "C:\messages_from_cn\in" 
+                 --save-in-history 
+                 --in-folder-history "C:\messages_from_cn\history" 
+                 --log-level info 
+                 --log-folder "C:\messages_to_cn\logs"
+                 --no-app-name
+*Avoid app-secret as command line argument. It will be prompted securely if not specified.
+ 
+ 
+"""
+    # Parse the arguments
+    args = parser.parse_args()
+    return args
 
 def parse_args_for_trade_pull():
     # Create the argument parser
