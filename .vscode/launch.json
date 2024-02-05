@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args" : ["--app-key", "3P9Fx2J4RPmFfJPe9tGlIUkUwcZF7eIX","--app-secret","jbdNUUADmNfRCMAt","--keep-alive","--endpoint","cn-dev","--log-level","debug","--save-in-history","--pollin-interval","10"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

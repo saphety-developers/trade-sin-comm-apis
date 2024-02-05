@@ -1,3 +1,4 @@
+import json
 import getpass
 import logging
 import os
@@ -13,6 +14,8 @@ DEFAULT_IN_FOLDER_NAME = 'in'
 DEFAULT_LOG_FOLDER_NAME = 'log'
 DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'cn-pull'
+DEFAULT_PREFETCH_QUANTITY = 2
+DEFAULT_WAIT_BLOCK_NOTIFICTION_TIMEOUT = 60
 logger: logging.Logger
 config: Configuration
 
@@ -24,9 +27,7 @@ def set_logging():
 def save_notification(notification):
     logger = logging.getLogger('save_notification')
 
-    print (f'notificationId: {notification["notificationId"]}- {notification["type"]}')
     filename = notification["content"]["name"]
-
     filePathAndName = os.path.join(config.in_folder, filename)
 
     content_to_save = notification["content"]["data"]
@@ -35,6 +36,7 @@ def save_notification(notification):
     ba64decode = ba64decode.decode('utf-8')
     
     save_text_to_file(filePathAndName, ba64decode)
+    print (f' Savig notificationId: {notification["notificationId"]}- {notification["type"]} to file {filePathAndName}...')
     if config.save_in_history:
         history_folder_for_file = append_date_time_subfolders(config.in_history)
         create_folder_if_no_exists(history_folder_for_file)
@@ -49,17 +51,24 @@ def pull_messages(token:str):
     logger = logging.getLogger('pull_messages')
     service_url = config.endpoint + '/' + config.api_version + '/compliance-network/notifications/fetch'
 
-    result = cn_get_notifications(service_url, token, wait_timeout=60, prefetch_quantity=10)
-    print ('Getting notifications with .. ' , )
+    log_console_and_log_debug ('Pulling notifications...' , )
+    result = cn_get_notifications(service_url, token, wait_timeout=config.wait_block_notification_timeout, prefetch_quantity=config.prefetch_quantity)
+    #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
-    if result["data"] is None:
-            logger.info('No notifications in server...')
+    has_notifications_to_save = result["data"] is not None and len(result["data"]) > 0
+    if not has_notifications_to_save:
+            log_console_and_log_debug('No notifications to pull...')
             return
-    # Loop in the shipment lists to be downloaded
-    for idx, notification in enumerate(result["data"]):
-        save_notification(notification)
 
-    logger.debug('No more messages in server...')
+    if has_notifications_to_save:
+        for idx, notification in enumerate(result["data"]):
+            save_notification(notification)
+    
+    # if the number of notifications pulled is equal to the prefetch quantity, we need to pull again
+    if len(result["data"]) == DEFAULT_PREFETCH_QUANTITY:
+        log_console_and_log_debug ('Pulled ' + str(len(result["data"])) + ' notifications. Pulling again...')
+        pull_messages(token)
+    return None
 
 #
 # pull_messges_interval
@@ -75,7 +84,7 @@ def pull_messges_interval(token):
             number_of_poolings+=1
             time.sleep(config.polling_interval)  # wait for x sec
     except KeyboardInterrupt:
-        log_console_message("Exiting program by user interrupt...")
+        log_console_and_log_debug("Exiting program by user interrupt...")
         logging.info ('Exiting program by user interrupt...')
 
 def set_in_folder():
@@ -101,6 +110,11 @@ if not config.log_folder:
 if not is_valid_url(config.endpoint):
     log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
     sys.exit(0)
+if not is_valid_positive_integer(config.prefetch_quantity):
+    config.prefetch_quantity = DEFAULT_PREFETCH_QUANTITY
+if not is_valid_positive_integer(config.wait_block_notification_timeout):
+    config.wait_block_notification_timeout = DEFAULT_WAIT_BLOCK_NOTIFICTION_TIMEOUT
+
 set_logging()
 
 log_app_cn_pull_starting(config)

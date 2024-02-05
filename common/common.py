@@ -124,6 +124,10 @@ def command_line_arguments_to_cn_pull_configuration(args: Namespace) -> Configur
     config.in_history = args.in_folder_history
   if hasattr(args, 'polling_interval'):
     config.polling_interval = args.polling_interval
+  if hasattr(args, 'prefetch_quantity'):
+    config.prefetch_quantity = args.prefetch_quantity
+  if hasattr(args, 'wait_block_notification_timeout'):
+    config.wait_block_notification_timeout = args.wait_block_notification_timeout
   
   config.log_folder = args.log_folder
   config.print_app_name = args.no_app_name
@@ -361,6 +365,8 @@ def parse_args_for_cn_pull():
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for notifications in the network')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
+    parser.add_argument('--prefetch-quantity', metavar='<seconds>', type=int, help='Number of notifications to pull in each request. Defaults to 10. Must be between 1 and 10.')
+    parser.add_argument('--wait-block-notification-timeout', metavar='<seconds>', type=int, help='Number of seconds to block notifications to be downloaded and marked as read. Defaults to 60.')
     parser.add_argument('--in-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/in')
     parser.add_argument('--save-in-history', action='store_true', help='Backup files received from the network')
     parser.add_argument('--in-folder-history', type=str, metavar='<download history folder>', required=False, help='Defaults to <current folder>/<app-key>/in_history')
@@ -379,6 +385,8 @@ sample usage with all arguments:
                  --endpoint https://api-internal.sovos.com
                  --keep-alive 
                  --polling-interval 30
+                 --prefetch-quantity 2
+                 --wait-block-notification-timeout 30
                  --in-folder "C:\messages_from_cn\in" 
                  --save-in-history 
                  --in-folder-history "C:\messages_from_cn\history" 
