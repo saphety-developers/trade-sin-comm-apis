@@ -6,7 +6,7 @@ import time
 import json
 import uuid
 import xml.etree.ElementTree as ET
-from apis.delta_sbdh import create_standard_business_document, get_element_by_xpath_in_SCI
+from common.xml.sbdh_helper import create_standard_business_document, get_element_by_xpath_in_SCI
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_push
 from apis.delta_copai import delta_send_document
