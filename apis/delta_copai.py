@@ -54,11 +54,12 @@ def delta_send_document(service_url:str,
                'Authorization': 'Bearer ' + token}
     
     #print(json.dumps(headers, indent=4))
-    #print(json.dumps(request, indent=4))
+    print(json.dumps(request, indent=4))
     request_data=json.dumps(request)
     response = requests.request("POST", service_url, data=request_data, headers=headers)
+    #print(json.dumps(response, indent=4))
     return response.json()
-    #print(json.dumps(json_response, indent=4))
+
 
 def delta_get_notifications(service_url: str, token: str, wait_timeout: int, prefetch_quantity: int) -> str:
     logger = logging.getLogger('cn_get_notifications')

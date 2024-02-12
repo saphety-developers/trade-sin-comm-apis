@@ -1,14 +1,6 @@
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-COUNTRY_FORMAT_MAPS = {
-    "IT": "FatturaPA",
-    "SA": "sa",
-    "HU": "hu",
-    "PO": "po"
-}
-
-
 # invoice_element is the root element of the invoice XML - SCI (UBL)
 # ex: <inv:Invoice xmlns:inv="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" ....>....</inv:Invoice>
 def create_sovos_document_for_sci_Invoice(invoice_element):
@@ -138,6 +130,7 @@ def create_standard_business_document(header_version = "1.0",
                                       is_payload_SCI_UBL = True,
                                       scope_version_identifier = "1.2.2",
                                       document_identification_type_version = "2.1",
+                                      output_schema_identifier = "-----",
                                       process_type_identifier = 'Outbound',
                                       sender_document_id_identifier = None, 
                                       document_type = "Invoice",
@@ -207,7 +200,6 @@ def create_standard_business_document(header_version = "1.0",
     #  <sbd:InstanceIdentifier/>
     #  <sbd:Identifier>FatturaPA</sbd:Identifier>
     #</sbd:Scope>
-    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country)
     scope_mapping_output_schema = create_scope_element("Mapping.OutputSchema", output_schema_identifier)
     business_scope.append(scope_mapping_output_schema)
     #<sbd:Scope>
@@ -278,10 +270,6 @@ def get_element_by_xpath_in_SCI(xml_sci_element, xpath):
         'ds': 'http://www.w3.org/2000/09/xmldsig#',
         'ext': 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2'
     }
-    # Register namespaces for ElementTree
-    # for ns_prefix, ns_uri in sci_namespaces.items():
-    #     ET.register_namespace(ns_prefix, ns_uri)
-
     result_element = xml_sci_element.find(xpath, sci_namespaces)
 
     return result_element
@@ -297,32 +285,3 @@ def evaluate_xpath(element, xpath, namespaces=None):
     else:
         return None
 
-
-
-    # Create an ElementTree object
-    #tree = ET.ElementTree(root)
-
-    # Convert the ElementTree to an XML string
-    #xml_string = ET.tostring(root, encoding="utf-8", method="xml").decode()
-
-    #return xml_string
-
-# Example usage:
-# invoice_element = ET.fromstring("""
-# <inv:Invoice xmlns="http://uri.etsi.org/01903/v1.4.1#" xmlns:ad="http://www.sovos.com/namespaces/additionalData" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:n0="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:crn="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2" xmlns:dbn="urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2" xmlns:enc="http://www.sovos.com/namespaces/base64Document" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:inv="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:qdt="urn:oasis:names:specification:ubl:schema:xsd:QualifiedDataTypes-2" xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2" xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2" xmlns:sbd="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader" xmlns:sci="http://www.sovos.com/namespaces/sovosCanonicalInvoice" xmlns:sov="http://www.sovos.com/namespaces/sovosExtensions" xmlns:svs="http://www.sovos.com/namespaces/sovosDocument" xmlns:udt="urn:oasis:names:specification:ubl:schema:xsd:UnqualifiedDataTypes-2" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:ccts-cct="urn:un:unece:uncefact:data:specification:CoreComponentTypeSchemaModule:2">
-#     <!-- Your Invoice content here -->
-# </inv:Invoice>
-# """)
-# result_xml = create_standard_business_document( sender_vat="03386690170",
-#                                                 receiver_vat="15844561009",
-#                                                 sender_vat_country="IT",
-#                                                 receiver_vat_country="IT",
-#                                                 is_payload_SCI_UBL=True,
-#                                                 scope_version_identifier = "1.2.2",
-#                                                 document_identification_type_version = "2.1",
-#                                                 process_type_identifier = "Outbound",
-#                                                 sender_document_id_identifier = None, 
-#                                                 document_type = "Invoice",
-#                                                 sender_system_id = "SystemERP",
-#                                                 invoice_element = invoice_element)
-# print(result_xml)

@@ -28,6 +28,12 @@ COUNTRY_FORMAT_STANDARD_MAPS = {
     "HU": "hu",
     "PO": "po"
 }
+COUNTRY_FORMAT_MAPS = {
+    "IT": "FatturaPA",
+    "SA": "sa",
+    "HU": "hu",
+    "PO": "po"
+}
 FORMAT_ID_LEGAL = "Legal"
 FORMAT_ID_SCI= "SCI"
 
@@ -106,6 +112,7 @@ def push_message(file_path: str, token: str) -> bool:
         scope_mapping = 'LEGAL-TO-SCI_INVOICE'
         is_payload_SCI_UBL = False
     
+    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country)
 
     print(f"document_type: {document_type}")
     print(f"sender_vat: {sender_vat.text}")
@@ -128,6 +135,7 @@ def push_message(file_path: str, token: str) -> bool:
                                         is_payload_SCI_UBL=is_payload_SCI_UBL,
                                         multiple_type_document_identification = multiple_type_document_identification,
                                         scope_mapping = scope_mapping,
+                                        output_schema_identifier = output_schema_identifier,
                                         scope_version_identifier = scope_version_identifier,
                                         document_identification_type_version = document_identification_type_version,
                                         process_type_identifier = process_type_identifier,
