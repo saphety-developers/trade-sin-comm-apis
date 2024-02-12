@@ -96,6 +96,8 @@ def push_message(file_path: str, token: str) -> bool:
     receiver_vat_country = get_element_by_xpath_in_SCI (xml_invoice_element, receiver_vat_country_xpath)
     doc_number = get_element_by_xpath_in_SCI (xml_invoice_element, doc_number_xpath)
 
+    sender_company_code =  sender_vat_country.text[2:]
+
     scope_version_identifier = "1.2.2"
     document_identification_type_version = "2.1"
     process_type_identifier = "Outbound"
@@ -112,7 +114,8 @@ def push_message(file_path: str, token: str) -> bool:
         scope_mapping = 'LEGAL-TO-SCI_INVOICE'
         is_payload_SCI_UBL = False
     
-    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country)
+    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country.text[:2])
+    document_identification_instance_identifier = sender_document_id_identifier
 
     print(f"document_type: {document_type}")
     print(f"sender_vat: {sender_vat.text}")
@@ -125,13 +128,18 @@ def push_message(file_path: str, token: str) -> bool:
     print(f"document_identification_standard: {document_identification_standard}")
     print(f"is_payload_SCI_UBL: {is_payload_SCI_UBL}")
     print(f"multiple_type_document_identification: {multiple_type_document_identification}")
-
+    print(f"output_schema_identifier: {output_schema_identifier}")
+    print(f"document_identification_instance_identifier: {document_identification_instance_identifier}")
+    print(f"sender_company_code: {sender_company_code}")
+    
     xml_standard_business_document = create_standard_business_document(header_version = header_version,
                                         sender_vat = sender_vat.text,
                                         receiver_vat = receiver_vat.text,
                                         sender_vat_country = sender_vat_country.text[:2],
+                                        sender_company_code = sender_company_code,
                                         receiver_vat_country = receiver_vat_country.text[:2],
                                         document_identification_standard = document_identification_standard,
+                                        document_identification_instance_identifier = document_identification_instance_identifier,
                                         is_payload_SCI_UBL=is_payload_SCI_UBL,
                                         multiple_type_document_identification = multiple_type_document_identification,
                                         scope_mapping = scope_mapping,
@@ -146,7 +154,7 @@ def push_message(file_path: str, token: str) -> bool:
                                         invoice_element = xml_invoice_element)
     
     xml_string = ET.tostring(xml_standard_business_document, encoding="utf-8", method="xml").decode()
-    save_text_to_file(f'{file_path}_sbdh.xml', xml_string)
+    #save_text_to_file(f'{file_path}_sbdh.xml', xml_string)
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
     result = delta_send_document (service_url=service_url, token=token, data=xml_string)

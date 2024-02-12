@@ -27,6 +27,13 @@ def create_type_version_document_identification(type_version):
 
     return element
 
+#<sbd:InstanceIdentifier>string</sbd:InstanceIdentifier>
+def create_instance_identifier(instance_identifier):
+    element = ET.Element("sbd:InstanceIdentifier")
+    element.text = instance_identifier
+
+    return element
+
 #<sbd:Type>Invoice</sbd:Type>
 def create_type_document_identification(document_type):
     element = ET.Element("sbd:Type")
@@ -124,12 +131,14 @@ def create_standard_business_document(header_version = "1.0",
                                       receiver_vat = None,
                                       sender_vat_country = "XX",
                                       receiver_vat_country = "XX",
+                                      sender_company_code = "SenderCompanyCode",
                                       document_identification_standard = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
                                       multiple_type_document_identification = "false",
                                       scope_mapping = 'SCI-TO-LEGAL_INVOICE',
                                       is_payload_SCI_UBL = True,
                                       scope_version_identifier = "1.2.2",
                                       document_identification_type_version = "2.1",
+                                      document_identification_instance_identifier = "------",
                                       output_schema_identifier = "-----",
                                       process_type_identifier = 'Outbound',
                                       sender_document_id_identifier = None, 
@@ -175,6 +184,8 @@ def create_standard_business_document(header_version = "1.0",
     document_identification.append(create_standard_document_identification(document_identification_standard))
     #<sbd:TypeVersion>2.1</sbd:TypeVersion>
     document_identification.append(create_type_version_document_identification(document_identification_type_version))
+    #<sbd:InstanceIdentifier>string</sbd:InstanceIdentifier>
+    document_identification.append(create_instance_identifier(document_identification_instance_identifier))
     #<sbd:Type>Invoice</sbd:Type>
     document_identification.append(create_type_document_identification(document_type))
     #<sbd:MultipleType>false</sbd:MultipleType>
@@ -219,7 +230,7 @@ def create_standard_business_document(header_version = "1.0",
     #  <sbd:InstanceIdentifier/>
     #  <sbd:Identifier>03386690170</sbd:Identifier>
     #</sbd:Scope>
-    business_scope.append(create_scope_element("CompanyCode", sender_vat))
+    business_scope.append(create_scope_element("CompanyCode", sender_company_code))
     #<sbd:Scope>
     #  <sbd:Type>SenderDocumentId</sbd:Type>
     #  <sbd:InstanceIdentifier/>
