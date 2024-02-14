@@ -24,6 +24,7 @@ class Configuration:
                  doc_type_id = '',
                  prefetch_quantity = 10,
                  wait_block_notification_timeout = 60,
+                 acknowledge_notifications = True,
                  log_folder=''):
         self.log_level = log_level
         self.keep_alive = keep_alive
@@ -50,6 +51,7 @@ class Configuration:
         self.doc_type_id = doc_type_id
         self.prefetch_quantity = prefetch_quantity
         self.wait_block_notification_timeout = wait_block_notification_timeout
+        self.acknowledge_notifications = acknowledge_notifications
         self.log_folder = log_folder
     def __str__(self):
         return (
@@ -79,6 +81,7 @@ class Configuration:
         f"doc_type_id='{self.doc_type_id}', "
         f"prefetch_quantity='{self.prefetch_quantity}', "
         f"wait_block_notification_timeout='{self.wait_block_notification_timeout}')"
+        f"acknowledge_notifications='{self.acknowledge_notifications}')"
         f"end_date='{self.end_date}'"
         )
 

@@ -61,9 +61,9 @@ def delta_send_document(service_url:str,
     return response.json()
 
 
-def delta_get_notifications(service_url: str, token: str, wait_timeout: int, prefetch_quantity: int) -> str:
+def delta_get_notifications(service_url: str, token: str, country_code: str, tax_id: str, source_system_id: str, page_size) -> str:
     logger = logging.getLogger('cn_get_notifications')
-    service_url = service_url + '?waitTimeOut=' + str(wait_timeout) + '&prefetchQuantity=' + str(prefetch_quantity)
+    service_url = service_url + '/' + country_code + '?taxId=' + tax_id + '&sourceSystemId=' + source_system_id + '&page=1&perPage=' + str(page_size)
     x_correlationId = str(uuid.uuid4())
     headers = { 'Authorization': 'Bearer ' + token, 'x-correlationId': x_correlationId }
     response = requests.request("GET", service_url, headers=headers)
