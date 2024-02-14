@@ -71,3 +71,33 @@ def delta_get_notifications(service_url: str, token: str, country_code: str, tax
     json_response = json.loads(response.text)
     logger.debug(f'Get notifications response serialized: {json.dumps(json_response, indent=4)}')
     return response.json()
+
+# Success response type (json_response):
+# {
+#   "status": 200,
+#   "message": "OK",
+#   "success": true,
+#   "timestamp": 1662022525599,
+#   "data": {}
+# }
+def delta_acknowledged_notification(service_url: str, token: str, country_code:str,  notification_id: str) -> str:
+    logger = logging.getLogger('delta_acknowledged_notification')
+    service_url = service_url + '/' + country_code
+    x_correlationId = str(uuid.uuid4())
+    headers = { 'Authorization': 'Bearer ' + token, 'x-correlationId': x_correlationId }
+    request = [{
+        "status": "read",
+        "notificationId": notification_id
+    }]
+    request_data=json.dumps(request)
+    response = requests.request("PUT", service_url, headers=headers, data=request_data)
+    json_response = json.loads(response.text)
+    if "success" in json_response and json_response["success"] == True:
+        logger.debug(f'Acknowledge notification response: {json_response}')
+        logger.debug(f'Acknowledge notification response serialized: {json.dumps(json_response, indent=4)}')
+        return json_response.json()
+    else:
+        logger.error(f'Error acknowledging notification: {json.dumps(json_response, indent=4)}')
+        print(f'Error acknowledging notification: {json.dumps(json_response, indent=4)}')
+        return "Error acknowledging notification..."
+    

@@ -7,7 +7,7 @@ import time
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_pull
 from apis.cn_copai import get_cn_coapi_token
-from apis.delta_copai import delta_get_notifications
+from apis.delta_copai import delta_get_notifications, delta_acknowledged_notification
 from common.file_handling import *
 from common.common import *
 
@@ -51,7 +51,8 @@ def save_notification(notification):
         historyFilePathAndName = os.path.join(history_folder_for_file, filename)
         save_text_to_file(historyFilePathAndName, ba64decode)
     if config.acknowledge_notifications:
-        acknowledge_notification(notification["notificationId"])
+        service_url = config.endpoint + '/' + config.api_version + '/notifications'
+        delta_acknowledged_notification(service_url=service_url, country_code='PT', token=token, notification_id=notification["notificationId"])
     return None
 
 #
@@ -70,7 +71,7 @@ def pull_messages(token:str):
                                         tax_id='03386690170',
                                         source_system_id='SystemERP',
                                         page_size=DEFAULT_PAGE_QUANTITY)
-    print(json.dumps(result, indent=4))
+    #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
     has_notifications_to_save = result["data"]["notifications"] is not None and len(result["data"]["notifications"]) > 0
     if not has_notifications_to_save:
