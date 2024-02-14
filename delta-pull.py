@@ -147,4 +147,4 @@ if token:
         pull_messages(token)
 else:
     log_could_not_get_token()
-log_app_ending()
+log_app_ending(APP_NAME)
