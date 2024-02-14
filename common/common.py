@@ -390,7 +390,7 @@ def parse_args_for_cn_push():
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='CN endpoints to push messages to. Use alias for known environments: "cn-dev", "cn-uat", "cn-prd" or specify a custom endpoint...')
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--document-type', type=str, default='Invoice', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
-    parser.add_argument('--format-id', type=str, default='SCI-1.0', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
+    parser.add_argument('--format-id', type=str, default='SCI-1.0', required=False, choices=['IT-SCI-1.0','....'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
