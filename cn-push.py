@@ -66,9 +66,8 @@ def push_message(file_path: str, token: str) -> bool:
                       document_type=doc_type_id,
                       x_correlationId=x_correlationId,
                       x_originSystemId=x_originSystemId)
-    #print(json.dumps(result, indent=4))
     
-    if result["success"] == True:
+    if "success" in result and result["success"] == True:
         log_console_and_log_debug(f'File {file_path} uploaded with x-correlationId: {x_correlationId}')
         log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
         if config.save_out_history:
@@ -80,6 +79,7 @@ def push_message(file_path: str, token: str) -> bool:
     else:
         log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
         logger.error(json.dumps(result, indent=4))
+        print(json.dumps(result, indent=4))
 
 ##
 # push_messages

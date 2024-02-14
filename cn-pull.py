@@ -55,9 +55,13 @@ def pull_messages(token:str):
     result = cn_get_notifications(service_url, token, wait_timeout=config.wait_block_notification_timeout, prefetch_quantity=config.prefetch_quantity)
     #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
-    has_notifications_to_save = result["data"] is not None and len(result["data"]) > 0
+    has_notifications_to_save = "data" in result and result["data"] is not None and len(result["data"]) > 0
     if not has_notifications_to_save:
-            log_console_and_log_debug('No notifications to pull...')
+            if "data" in result and result["data"] is not None:
+                log_console_and_log_debug('No notifications to pull...')
+            if "error" in result and result["error"] is not None:
+                log_console_and_log_debug('Error when pulling notifications...')
+                print(json.dumps(result, indent=4))
             return
 
     if has_notifications_to_save:
