@@ -16,6 +16,7 @@ DEFAULT_LOG_FOLDER_NAME = 'log'
 DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'delta-pull'
 DEFAULT_PAGE_QUANTITY = 20
+COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA']
 logger: logging.Logger
 config: Configuration
 
@@ -58,16 +59,16 @@ def save_notification(notification):
 #
 # pull_messages
 #
-def pull_messages(token:str):
+def pull_messages(token:str, country_code):
     logger = logging.getLogger('pull_messages')
 
     # TODO query parameters must be url setedas config variables
     service_url = config.endpoint + '/' + config.api_version + '/notifications'
 
-    log_console_and_log_debug ('Pulling notifications...' , )
+    log_console_and_log_debug (f'Pulling notifications for {country_code}...' , )
     result = delta_get_notifications(service_url=service_url,
                                         token=token,
-                                        country_code='IT',
+                                        country_code=country_code,
                                         tax_id='03386690170',
                                         source_system_id='SystemERP',
                                         page_size=DEFAULT_PAGE_QUANTITY)
@@ -98,7 +99,8 @@ def pull_messges_interval(token):
             if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
                 logging.info('Requested new auth token: ' + token)
-            pull_messages(token)
+            for country_code in COUNTRY_CODES_TO_PULL_FROM:
+                pull_messages(token, country_code)
             number_of_poolings+=1
             time.sleep(config.polling_interval)  # wait for x sec
     except KeyboardInterrupt:

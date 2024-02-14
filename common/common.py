@@ -116,6 +116,8 @@ def command_line_arguments_to_cn_pull_configuration(args: Namespace) -> Configur
   config.app_secret = args.app_secret
   config.keep_alive = args.keep_alive
   config.log_level = args.log_level
+
+  config.acknowledge_notifications = not args.do_not_acknowledge_notifications
   if hasattr(args, 'save_in_history'):
     config.save_in_history = args.save_in_history
   if hasattr(args, 'in_folder'):
@@ -172,8 +174,6 @@ def command_line_arguments_to_delta_pull_configuration(args: Namespace) -> Confi
   config.log_level = args.log_level
   if hasattr(args, 'save_in_history'):
     config.save_in_history = args.save_in_history
-  if hasattr(args, 'acknowledge_notifications'):
-    config.acknowledge_notifications = args.acknowledge_notification
   if hasattr(args, 'in_folder'):
     config.in_folder = args.in_folder
   if hasattr(args, 'in_folder_history'):
@@ -328,7 +328,7 @@ def log_app_sin_search_ending():
 # add a app_ ame parameter with the default value "Trade messaging api client"
     
 def log_app_ending(app_name: str = 'Trade messaging api client'):
-    log_console_and_log_debug(f'"{app_name} ending.')
+    log_console_and_log_debug(f'{app_name} ending.')
 
 def log_could_not_get_token():
     log_console_and_log_debug ('Could not get token....')
@@ -531,7 +531,7 @@ def parse_args_for_delta_pull():
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--in-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/in')
     parser.add_argument('--save-in-history', action='store_true', help='Backup files received from the network')
-    parser.add_argument('--acknowledge-notifications', action='store_true', help='Acknowledge notifications after processing')
+    parser.add_argument('--do-not-acknowledge-notifications', action='store_true', help='Do not acknowledge notifications.')
     parser.add_argument('--in-folder-history', type=str, metavar='<download history folder>', required=False, help='Defaults to <current folder>/<app-key>/in_history')
     parser.add_argument('--log-folder', type=str,  metavar='<log folder>', help='Logging folder. Defaults to <current folder>/log')
     parser.add_argument('--log-level', type=str, default='info', choices=['debug', 'info', 'error'], help='Logging level')
@@ -551,6 +551,7 @@ sample usage with all arguments:
                  --in-folder "C:\notifications_from_delta\in" 
                  --save-in-history 
                  --in-folder-history "C:\notifications_from_delta\history" 
+                 --do-not-acknowledge-notifications keep notifications to next pooling
                  --log-level info 
                  --log-folder "C:\notifications_from_delta\logs"
                  --no-app-name
