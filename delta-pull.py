@@ -99,7 +99,7 @@ def pull_messges_interval(token):
             if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
                 logging.info('Requested new auth token: ' + token)
-            for country_code in COUNTRY_CODES_TO_PULL_FROM:
+            for country_code in config.countries_to_pull_notifications:
                 pull_messages(token, country_code)
             number_of_poolings+=1
             time.sleep(config.polling_interval)  # wait for x sec
@@ -115,7 +115,7 @@ def set_in_folder():
 # Main - Application starts here
 ##
 args = parse_args_for_delta_pull()
-config = command_line_arguments_to_cn_pull_configuration(args)
+config = command_line_arguments_to_delta_pull_configuration(args)
 
 if config.print_app_name:
     ascii_art_delta_pull()
@@ -127,6 +127,8 @@ if not config.in_history:
     config.in_history = os.path.join(os.getcwd(), config.app_key, DEFAULT_IN_FOLDER_HISTORY_NAME)
 if not config.log_folder:
     config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
+if config.countries_to_pull_notifications is None or len(config.countries_to_pull_notifications) == 0:
+    config.countries_to_pull_notifications = COUNTRY_CODES_TO_PULL_FROM
 if not is_valid_url(config.endpoint):
     log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
     sys.exit(0)
