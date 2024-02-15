@@ -4,15 +4,22 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "args" : ["--app-key", "3P9Fx2J4RPmFfJPe9tGlIUkUwcZF7eIX","--app-secret","jbdNUUADmNfRCMAt","--keep-alive","--endpoint","cn-dev","--log-level","debug","--save-in-history","--pollin-interval","10"],
-            "console": "integratedTerminal",
-            "justMyCode": true
-        }
+      {
+        "name": "Push to Delta QA - Valientine",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "delta-push.py",
+        "args": [
+          "--app-key=lgxYDm2XgC8tMFykoKW5flz1eAn8UtW5",
+          "--app-secret=or46CaG1Ta6yPVeJ",
+          "--keep-alive",
+          "--endpoint=delta-qa",
+          "--log-level=debug",
+          "--save-out-history",
+          "--polling-interval=20"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
+      }
     ]
-}
+  }
