@@ -66,6 +66,8 @@ def push_message(file_path: str, token: str) -> bool:
     logger = logging.getLogger('upload_file')
     logger.debug(f'Uploading file {file_path} started')
 
+    # get just the file name
+    filename = os.path.basename(file_path)
 
     base64_contents = read_file_to_base64(file_path)
     if base64_contents is None:
@@ -101,7 +103,7 @@ def push_message(file_path: str, token: str) -> bool:
     scope_version_identifier = "1.2.2"
     document_identification_type_version = "2.1"
     process_type_identifier = "Outbound"
-    sender_document_id_identifier = doc_number.text + "-"  + sender_vat_country.text[:2] + sender_vat.text + "-" +  "-" + receiver_vat_country.text[:2] + receiver_vat.text + "-" 
+    sender_document_id_identifier = filename + '_' + doc_number.text + "_"  + sender_vat_country.text[:2] + sender_vat.text + "_" +  "_" + receiver_vat_country.text[:2] + receiver_vat.text
     multiple_type_document_identification = "false"
 
 
@@ -153,11 +155,10 @@ def push_message(file_path: str, token: str) -> bool:
                                         business_service_name = business_service_name,
                                         invoice_element = xml_invoice_element)
     
-    xml_string = ET.tostring(xml_standard_business_document, encoding="utf-8", method="xml").decode()
-    save_text_to_file(f'{file_path}_sbdh.xml', xml_string)
+    xml_string_with_sbdh = ET.tostring(xml_standard_business_document, encoding="utf-8", method="xml").decode()
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
-    result = delta_send_document (service_url=service_url, token=token, data=xml_string)
+    result = delta_send_document (service_url=service_url, token=token, data=xml_string_with_sbdh)
     print(json.dumps(result, indent=4))
     
     if result["success"] == True:
@@ -167,6 +168,11 @@ def push_message(file_path: str, token: str) -> bool:
             history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
             create_folder_if_no_exists(history_folder_for_file)
             move_file(src_path=file_path, dst_folder = history_folder_for_file)
+            # also sacve in out history the file enveloped with sbdh
+            src_filename = os.path.basename(file_path)
+            dst_filename_with_sbdh = os.path.join(history_folder_for_file, src_filename)
+
+            save_text_to_file(f'{dst_filename_with_sbdh}_with_sbdh.xml', xml_string_with_sbdh)
         else:
             delete_file(file_path)  
     else:

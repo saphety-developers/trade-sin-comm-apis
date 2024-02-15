@@ -65,6 +65,53 @@ def delta_send_document(service_url:str,
     return response.json()
 
 
+# Result with errors
+# {
+#     "timestamp": 1707994250637,
+#     "status": 403,
+#     "success": false,
+#     "message": "Forbidden",
+#     "errors": [
+#         {
+#             "message": "User is not eligible to get notifications for `03715361204X` TaxId.",
+#             "subCode": "forbidden"
+#         }
+#     ]
+# }
+# Result with success
+#{
+#   "status": 200,
+#   "message": "Notifications Listed",
+#   "success": true,
+#   "timestamp": 1707994879404,
+#   "data": {
+#       "pageState": {
+#           "page": 1,
+#           "perPage": 20,
+#           "totalEntries": 2,
+#           "totalPages": 1
+#       },
+#       "notifications": [
+#           {
+#               "notificationId": "c831158f-e508-4239-a874-9862bb772545",
+#               "correlationId": "rrt-3385097121934496584-a-geu3-21820-20367915-1",
+#               "appPrefix": "DLT",
+#               "metadata": {
+#                   "productId": "it_FatturaPA__1.2.2",
+#                   "transactionId": "0f32cecf-832e-4574-8d8f-132d0b7f2160",
+#                   "documentId": "8841ae5935b3022aa15ebc1b9d7395ff",
+#                   "erpDocumentId": "Valentine-SR15_001-ITIT03715361204--ITIT07973780013-",
+#                   "erpSystemId": "SystemERP",
+#                   "processType": "0",
+#                   "taxId": "03715361204",
+#                   "sciCloudStatusCode": "209",
+#                   "sciResponseCode": "RE",
+#                   "sciStatusAction": "NOA"
+#               },
+#               "content": "PD94(..)g==",
+#               "createdDate": 1707935322506
+#           }
+#]
 def delta_get_notifications(service_url: str, token: str, country_code: str, tax_id: str, source_system_id: str, page_size) -> str:
     logger = logging.getLogger('cn_get_notifications')
     service_url = service_url + '/' + country_code + '?taxId=' + tax_id + '&sourceSystemId=' + source_system_id + '&page=1&perPage=' + str(page_size)
@@ -88,20 +135,15 @@ def delta_acknowledged_notification(service_url: str, token: str, country_code:s
     logger = logging.getLogger('delta_acknowledged_notification')
     service_url = service_url + '/' + country_code
     x_correlationId = str(uuid.uuid4())
-    headers = { 'Authorization': 'Bearer ' + token, 'x-correlationId': x_correlationId }
+    headers = { 'Authorization': 'Bearer ' + token, 'x-correlationId': x_correlationId, 'content-type': 'application/json'}
     request = [{
         "status": "read",
         "notificationId": notification_id
     }]
     request_data=json.dumps(request)
+    logger.debug(f'Get notifications request headers: {json.dumps(headers, indent=4)}')
+    logger.debug(f'Get notifications request body: {json.dumps(request, indent=4)}')
     response = requests.request("PUT", service_url, headers=headers, data=request_data)
-    json_response = json.loads(response.text)
-    if "success" in json_response and json_response["success"] == True:
-        logger.debug(f'Acknowledge notification response: {json_response}')
-        logger.debug(f'Acknowledge notification response serialized: {json.dumps(json_response, indent=4)}')
-        return json_response.json()
-    else:
-        logger.error(f'Error acknowledging notification: {json.dumps(json_response, indent=4)}')
-        print(f'Error acknowledging notification: {json.dumps(json_response, indent=4)}')
-        return "Error acknowledging notification..."
+    logger.debug(f'Acknowledge notification response: {json.dumps(json.loads(response.text), indent=4)}')
+    return response.json()
     

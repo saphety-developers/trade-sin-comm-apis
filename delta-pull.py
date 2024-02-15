@@ -37,7 +37,7 @@ def save_notification(notification):
     erp_document_id = notification["metadata"]["erpDocumentId"]
     tax_id = notification["metadata"]["taxId"]    
 
-    filename = tax_id + '_' + erp_document_id + '.xml'
+    filename = tax_id + '_' + erp_document_id + '_' + notification["notificationId"] + '.xml'
     filePathAndName = os.path.join(config.in_folder, filename)
 
     content_to_save = notification["content"]
@@ -54,7 +54,14 @@ def save_notification(notification):
         save_text_to_file(historyFilePathAndName, ba64decode)
     if config.acknowledge_notifications:
         service_url = config.endpoint + '/' + config.api_version + '/notifications'
-        delta_acknowledged_notification(service_url=service_url, country_code='PT', token=token, notification_id=notification["notificationId"])
+        response = delta_acknowledged_notification(service_url=service_url, country_code='PT', token=token, notification_id=notification["notificationId"])
+        if "success" in response and response["success"] == True:
+            log_console_and_log_debug(f'Notification {notification["notificationId"]} acknowledged...')
+            logger.debug(f'Acknowledge notification response serialized: {json.dumps(response, indent=4)}')
+        if "errors" in response:
+            # iterate over errors
+            for idx, error in enumerate(response["errors"]):
+                log_console_and_log_debug(f'Error acknowledging notification {notification["notificationId"]}: {error["message"]}')
     return None
 
 #
@@ -73,21 +80,32 @@ def pull_messages(token:str, country_code, tax_id):
                                         tax_id=tax_id,
                                         source_system_id=config.source_system_id,
                                         page_size=DEFAULT_PAGE_QUANTITY)
+    logger.debug(json.dumps(result, indent=4))
+    if "errors" in result:
+        log_console_and_log_debug(f'Error pulling notifications for {country_code}-{tax_id}-{config.source_system_id}...')
+        #iterate over errors
+        for idx, error in enumerate(result["errors"]):
+            log_console_and_log_debug(f'Error {idx}: {error["message"]}')
+        return
+    if "error" in result:
+        print(json.dumps(result, indent=4))
+        return
     #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
-    has_notifications_to_save = result["data"]["notifications"] is not None and len(result["data"]["notifications"]) > 0
-    if not has_notifications_to_save:
-            log_console_and_log_debug('No notifications to pull...')
-            return
+    if "data" in result:
+        has_notifications_to_save = result["data"]["notifications"] is not None and len(result["data"]["notifications"]) > 0
+        if not has_notifications_to_save:
+                log_console_and_log_debug('No notifications to pull...')
+                return
 
-    if has_notifications_to_save:
-        for idx, notification in enumerate(result["data"]["notifications"]):
-            save_notification(notification)
-    
-    # if the number of notifications pulled is equal to the prefetch quantity, we need to pull again
-    if len(result["data"]["notifications"]) == DEFAULT_PAGE_QUANTITY:
-        log_console_and_log_debug ('Pulled ' + str(len(result["data"]["notifications"])) + ' notifications. Pulling again...')
-        pull_messages(token, country_code, tax_id)
+        if has_notifications_to_save:
+            for idx, notification in enumerate(result["data"]["notifications"]):
+                save_notification(notification)
+        # if the number of notifications pulled is equal to the prefetch quantity, we need to pull again
+        if len(result["data"]["notifications"]) == DEFAULT_PAGE_QUANTITY:
+            log_console_and_log_debug ('Pulled ' + str(len(result["data"]["notifications"])) + ' notifications. Pulling again...')
+            pull_messages(token, country_code, tax_id)
+    logger.debug(json.dumps(result, indent=4))
     return None
 
 #
