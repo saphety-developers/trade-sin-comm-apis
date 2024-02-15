@@ -154,7 +154,7 @@ def push_message(file_path: str, token: str) -> bool:
                                         invoice_element = xml_invoice_element)
     
     xml_string = ET.tostring(xml_standard_business_document, encoding="utf-8", method="xml").decode()
-    #save_text_to_file(f'{file_path}_sbdh.xml', xml_string)
+    save_text_to_file(f'{file_path}_sbdh.xml', xml_string)
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
     result = delta_send_document (service_url=service_url, token=token, data=xml_string)

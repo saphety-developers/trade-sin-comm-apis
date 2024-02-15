@@ -44,6 +44,7 @@ def get_delta_coapi_token(service_url: str, app_key: str, app_secret: str) -> st
 def delta_send_document(service_url:str,
                      token: str,
                      data: str) -> str:
+    logger = logging.getLogger('delta_send_document')
     # convert data to base64
     data_in_base64 = base64.b64encode(data.encode('utf-8')).decode('utf-8')
     request = {
@@ -53,11 +54,14 @@ def delta_send_document(service_url:str,
     headers = {'content-type': 'application/json',
                'Authorization': 'Bearer ' + token}
     
+    logger.debug(json.dumps(headers, indent=4))
+    logger.debug(json.dumps(request, indent=4))
     #print(json.dumps(headers, indent=4))
-    print(json.dumps(request, indent=4))
+    #print(json.dumps(request, indent=4))
     request_data=json.dumps(request)
     response = requests.request("POST", service_url, data=request_data, headers=headers)
     #print(json.dumps(response, indent=4))
+    logger.debug(json.dumps(response.json(), indent=4))
     return response.json()
 
 

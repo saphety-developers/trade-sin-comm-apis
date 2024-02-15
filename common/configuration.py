@@ -6,6 +6,8 @@ class Configuration:
                  app_key='',
                  app_secret='',
                  countries_to_pull_notifications=None,
+                 source_system_id=None,
+                 tax_ids_to_pull_notifications=None,
                  out_folder='',
                  header_x_operational_endpoint_partner_id=None,
                  in_folder='',
@@ -34,6 +36,8 @@ class Configuration:
         self.app_key = app_key
         self.app_secret = app_secret
         self.countries_to_pull_notifications = countries_to_pull_notifications
+        self.tax_ids_to_pull_notifications = tax_ids_to_pull_notifications
+        self.source_system_id = source_system_id
         self.print_app_name = print_app_name
         self.save_out_history = save_out_history
         self.save_in_history = save_in_history
@@ -64,6 +68,8 @@ class Configuration:
         f"app_key='{self.app_key}', "
         f"app_secret='{self.app_secret}', "
         f"countries_to_pull_notifications='{self.countries_to_pull_notifications}', "
+        f"tax_ids_to_pull_notifications='{self.tax_ids_to_pull_notifications}', "
+        f"source_system_id='{self.source_system_id}', "
         f"print_app_name='{self.print_app_name}', "
         f"save_out_history='{self.save_out_history}', "
         f"save_in_history='{self.save_in_history}', "

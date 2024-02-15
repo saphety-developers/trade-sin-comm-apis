@@ -171,8 +171,8 @@ def create_standard_business_document(header_version = "1.0",
     #<sbd:Sender>
     #  <sbd:Identifier Authority="IT">03386690170</sbd:Identifier>
     #</sbd:Sender>
-    sender_element = create_sender_element(sender_vat_country, sender_vat)
-    receiver_element = create_receiver_element(receiver_vat_country, receiver_vat)
+    sender_element = create_sender_element(sender_vat_country, sender_vat[2:])
+    receiver_element = create_receiver_element(receiver_vat_country, receiver_vat[2:])
     sbd_header.append(sender_element)
     sbd_header.append(receiver_element)
 

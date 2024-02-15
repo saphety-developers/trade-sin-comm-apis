@@ -17,6 +17,7 @@ DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'delta-pull'
 DEFAULT_PAGE_QUANTITY = 20
 COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA']
+DEFAULT_SOURCE_SYSTEM_ID = 'SystemERP'
 logger: logging.Logger
 config: Configuration
 
@@ -59,18 +60,18 @@ def save_notification(notification):
 #
 # pull_messages
 #
-def pull_messages(token:str, country_code):
+def pull_messages(token:str, country_code, tax_id):
     logger = logging.getLogger('pull_messages')
 
     # TODO query parameters must be url setedas config variables
     service_url = config.endpoint + '/' + config.api_version + '/notifications'
 
-    log_console_and_log_debug (f'Pulling notifications for {country_code}...' , )
+    log_console_and_log_debug (f'Pulling notifications for {country_code}-{tax_id}-{config.source_system_id}...' , )
     result = delta_get_notifications(service_url=service_url,
                                         token=token,
                                         country_code=country_code,
-                                        tax_id='03386690170',
-                                        source_system_id='SystemERP',
+                                        tax_id=tax_id,
+                                        source_system_id=config.source_system_id,
                                         page_size=DEFAULT_PAGE_QUANTITY)
     #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
@@ -86,7 +87,7 @@ def pull_messages(token:str, country_code):
     # if the number of notifications pulled is equal to the prefetch quantity, we need to pull again
     if len(result["data"]["notifications"]) == DEFAULT_PAGE_QUANTITY:
         log_console_and_log_debug ('Pulled ' + str(len(result["data"]["notifications"])) + ' notifications. Pulling again...')
-        pull_messages(token)
+        pull_messages(token, country_code, tax_id)
     return None
 
 #
@@ -99,10 +100,11 @@ def pull_messges_interval(token):
             if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
                 logging.info('Requested new auth token: ' + token)
-            for country_code in config.countries_to_pull_notifications:
-                pull_messages(token, country_code)
-            number_of_poolings+=1
-            time.sleep(config.polling_interval)  # wait for x sec
+            for tax_id in config.tax_ids_to_pull_notifications:
+                for country_code in config.countries_to_pull_notifications:
+                    pull_messages(token, country_code, tax_id)
+                number_of_poolings+=1
+                time.sleep(config.polling_interval)  # wait for x sec
     except KeyboardInterrupt:
         log_console_and_log_debug("Exiting program by user interrupt...")
         logging.info ('Exiting program by user interrupt...')
@@ -129,6 +131,13 @@ if not config.log_folder:
     config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
 if config.countries_to_pull_notifications is None or len(config.countries_to_pull_notifications) == 0:
     config.countries_to_pull_notifications = COUNTRY_CODES_TO_PULL_FROM
+if config.source_system_id is None or len(config.source_system_id) == 0:
+    config.source_system_id = DEFAULT_SOURCE_SYSTEM_ID
+if config.tax_ids_to_pull_notifications is None or len(config.tax_ids_to_pull_notifications) == 0:
+    log_console_message('No tax ids to pull notifications from. Use option --tax-ids 78987311221 . Exiting...')
+    sys.exit(0)
+
+
 if not is_valid_url(config.endpoint):
     log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
     sys.exit(0)

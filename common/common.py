@@ -174,6 +174,7 @@ def command_line_arguments_to_delta_pull_configuration(args: Namespace) -> Confi
 
   config.acknowledge_notifications = not args.do_not_acknowledge_notifications
   config.countries_to_pull_notifications = args.countries 
+  config.tax_ids_to_pull_notifications = args.tax_ids
   
   if hasattr(args, 'save_in_history'):
     config.save_in_history = args.save_in_history
@@ -201,7 +202,7 @@ def get_endpoint_entry_by_alias(alias: str) -> str:
     'cn-dev': 'https://api-internal.sovos.com',
     'cn-uat': 'https://api-internal.sovos.com',
     'delta-qa': 'https://api-internal.sovos.com',
-    'delta-uat': 'https://api-uat.sovos.com'
+    'delta-uat': 'https://api-test.sovos.com'
   }
   return endpoints_dict.get(alias, None)
 
@@ -528,7 +529,9 @@ def parse_args_for_delta_pull():
     # Add the arguments to the parser
     parser.add_argument('--app-key', type=str, metavar='<app key from developer.sovos.com>', required=True, help='Register yous apps in developer.sovos.com')
     parser.add_argument('--app-secret', type=str, metavar='<app secre from developer.sovos.com>', required=False, help='Register yous apps in developer.sovos.com')
-    parser.add_argument('--countries',metavar='<Country code list>', required=False, help='List of countries to notifications', nargs="+")
+    parser.add_argument('--countries',metavar='<List of country codes>', required=False, help='List of countries to notifications', nargs="+")
+    parser.add_argument('--tax-ids',metavar='<List of company tax ids>', required=True, help='List of companies to pull notifications', nargs="+")
+    parser.add_argument('--source-system-id', type=str, metavar='<ERP defined in delta configurations>', required=False, help='if not specified defaults to "SystemERP"')
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='COAPI endpoints to pull notifications from. Use alias for known environments: "delta-dev", "delta-uat", "delta-prd" or specify a custom endpoint...')
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for notifications in the network')
@@ -550,6 +553,7 @@ sample usage with all arguments:
   %(prog)s  --app-key 6D9Ux2J4KPaFfTPe9tGlIUfPwcZF7fVI
                  --app-secret kdeOJJPCiPsTWAGO 
                  --countries IT SA HU - a fixed list of known countries will be pulled if not specified
+                 --tax-ids 123456789 987654321 123456789
                  --endpoint https://api-internal.sovos.com
                  --keep-alive 
                  --polling-interval 30
