@@ -39,22 +39,23 @@ FORMAT_ID_SCI= "SCI"
 
 XPATH_MAPPINGS = {
     'SCI': {
-        'sender_vat': "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
-        'sender_vat_country': "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
-        'receiver_vat': "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
-        'receiver_vat_country': "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
-        'doc_number': "./cbc:ID"
+        'sender_vat': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
+        'sender_vat_country': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
+        'receiver_vat': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
+        'receiver_vat_country': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
+        'doc_number': ["./cbc:ID"]
     },
     'IT': {
-        'sender_vat': "./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdCodice",
-        'sender_vat_country': "./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdPaese",
-        'receiver_vat': "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdCodice",
-        'receiver_vat_country': "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdPaese",
-        'doc_number': "./FatturaElettronicaBody/DatiGenerali/DatiGeneraliDocumento/Numero"
+        'sender_vat': ["./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdCodice"],
+        'sender_vat_country': ["./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdPaese"],
+        'receiver_vat': ["./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdCodice",
+                         "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/CodiceFiscale"],
+        'receiver_vat_country': ["./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdPaese"],
+        'doc_number': ["./FatturaElettronicaBody/DatiGenerali/DatiGeneraliDocumento/Numero"]
     },
     'FR': {
-        'sender_vat': '/party/emisseur/id',
-        'receiver_vat': '/party/recepteur/id',
+        'sender_vat': ['/party/emisseur/id'],
+        'receiver_vat': ['/party/recepteur/id'],
     }
 }
 
@@ -100,11 +101,11 @@ def push_message(file_path: str, token: str) -> bool:
     xml_invoice_element = decode_base64_and_get_element(base64_contents)
     format_to_get_xpapth = config.format_id
 
-    sender_vat_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat']
-    sender_vat_country_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat_country']
-    receiver_vat_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat']
-    receiver_vat_country_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat_country']
-    doc_number_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['doc_number']
+    sender_vat_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat']
+    sender_vat_country_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat_country']
+    receiver_vat_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat']
+    receiver_vat_country_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat_country']
+    doc_number_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['doc_number']
 
     sender_system_id = "SystemERP"
     business_service_name = "Default"
@@ -131,23 +132,47 @@ def push_message(file_path: str, token: str) -> bool:
 
 
     header_version = "1.0"
-    sender_vat = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_xpath, namespaces)
-    sender_vat_country = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_country_xpath, namespaces)
-    receiver_vat = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_xpath, namespaces)
-    receiver_vat_country = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_country_xpath, namespaces)
-    doc_number = get_element_by_xpath_with_namespaces (xml_invoice_element, doc_number_xpath, namespaces)
+    sender_vat_element = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_xpaths, namespaces)
+    sender_vat_country_element = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_country_xpaths, namespaces)
+    receiver_vat_element = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_xpaths, namespaces)
+    receiver_vat_country_element = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_country_xpaths, namespaces)
+    doc_number_element = get_element_by_xpath_with_namespaces (xml_invoice_element, doc_number_xpaths, namespaces)
 
     # if sender_vat_country len is greater then 2, then we have the country code and the vat number
     #   in this case we get the compnay code from international the vat number
-    if len(sender_vat_country.text) > 2:
-        sender_company_code =  sender_vat_country.text[2:]
+    if len(sender_vat_country_element.text) > 2:
+        sender_company_code =  sender_vat_country_element.text[2:]
     else:
-        sender_company_code =  sender_vat.text
+        sender_company_code =  sender_vat_element.text
+    
+    if sender_vat_element is None:
+        log_console_and_log_debug(f'Error: could not extract sender VAT with xpaths {sender_vat_xpaths}')
+        return False
+    if sender_vat_country_element is None:
+        log_console_and_log_debug(f'Error: could not extract sender VAT country with xpaths {sender_vat_country_xpaths}')
+        return False
+    if receiver_vat_element is None:
+        log_console_and_log_debug(f'Error: could not extract receiver VAT with xpaths {receiver_vat_xpaths}')
+        return False
+    if receiver_vat_country_element is None:
+        log_console_and_log_debug(f'Warning: could not extract receiver VAT country with xpaths {receiver_vat_country_xpaths}')
+    if doc_number_element is None:
+        log_console_and_log_debug(f'Warning: could not extract document number with xpaths {doc_number_xpaths}')
+
 
     scope_version_identifier = "1.2.2"
     document_identification_type_version = "2.1"
     process_type_identifier = "Outbound"
-    sender_document_id_identifier = filename + '_' + doc_number.text + "_"  + sender_vat_country.text[:2] + sender_vat.text + "_" +  "_" + receiver_vat_country.text[:2] + receiver_vat.text
+    sender_vat = sender_vat_element.text if sender_vat_element is not None else ""
+    sender_vat_country = sender_vat_country_element.text if sender_vat_country_element is not None else ""
+    receiver_vat = receiver_vat_element.text if receiver_vat_element is not None else ""
+    receiver_vat_country = receiver_vat_country_element.text if receiver_vat_country_element is not None else ""
+    doc_number = doc_number_element.text if doc_number_element is not None else ""
+
+
+    sender_document_id_identifier = f"{filename}_{doc_number}_{sender_vat_country[:2]}{sender_vat}_{receiver_vat_country[:2]}{receiver_vat}"
+
+
     multiple_type_document_identification = "false"
 
 
@@ -156,7 +181,7 @@ def push_message(file_path: str, token: str) -> bool:
         scope_mapping = 'SCI-TO-LEGAL_INVOICE'
         is_payload_SCI_UBL = True
     else:
-        document_identification_standard = COUNTRY_FORMAT_STANDARD_MAPS.get(sender_vat_country.text[:2])
+        document_identification_standard = COUNTRY_FORMAT_STANDARD_MAPS.get(sender_vat_country[:2])
         scope_mapping = 'LEGAL-TO-SCI_INVOICE'
         is_payload_SCI_UBL = False
 
@@ -166,17 +191,17 @@ def push_message(file_path: str, token: str) -> bool:
         root_element_name = xml_invoice_element.tag.split('}')[1] if '}' in xml_invoice_element.tag else xml_invoice_element.tag
         document_type = root_element_name
     else:
-        document_type = COUNTRY_FORMAT_MAPS.get(sender_vat_country.text[:2])
+        document_type = COUNTRY_FORMAT_MAPS.get(sender_vat_country[:2])
     
-    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country.text[:2])
+    output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country[:2])
     document_identification_instance_identifier = sender_document_id_identifier
 
     print(f"document_type: {document_type}")
-    print(f"sender_vat: {sender_vat.text}")
-    print(f"sender_vat_country: {sender_vat_country.text}")
-    print(f"receiver_vat: {receiver_vat.text}")
-    print(f"receiver_vat_country: {receiver_vat_country.text}")
-    print(f"doc_number: {doc_number.text}")
+    print(f"sender_vat: {sender_vat}")
+    print(f"sender_vat_country: {sender_vat_country}")
+    print(f"receiver_vat: {receiver_vat}")
+    print(f"receiver_vat_country: {receiver_vat_country}")
+    print(f"doc_number: {doc_number}")
     print(f"sender_document_id_identifier: {sender_document_id_identifier}")
     print(f"scope_mapping: {scope_mapping}")
     print(f"document_identification_standard: {document_identification_standard}")
@@ -186,12 +211,13 @@ def push_message(file_path: str, token: str) -> bool:
     print(f"document_identification_instance_identifier: {document_identification_instance_identifier}")
     print(f"sender_company_code: {sender_company_code}")
     
-    xml_standard_business_document = create_standard_business_document(header_version = header_version,
-                                        sender_vat = sender_vat.text,
-                                        receiver_vat = receiver_vat.text,
-                                        sender_vat_country = sender_vat_country.text[:2],
+    xml_standard_business_document = create_standard_business_document(
+                                        header_version = header_version,
+                                        sender_vat = sender_vat,
+                                        receiver_vat = receiver_vat,
+                                        sender_vat_country = sender_vat_country[:2],
                                         sender_company_code = sender_company_code,
-                                        receiver_vat_country = receiver_vat_country.text[:2],
+                                        receiver_vat_country = receiver_vat_country[:2],
                                         document_identification_standard = document_identification_standard,
                                         document_identification_instance_identifier = document_identification_instance_identifier,
                                         is_payload_SCI_UBL=is_payload_SCI_UBL,
