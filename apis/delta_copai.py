@@ -39,7 +39,19 @@ def get_delta_coapi_token(service_url: str, app_key: str, app_secret: str) -> st
          logger.exception("Could not retrieve token. Response serialization error: %s", e)
          return None
 
-
+# Error response
+#{
+#    "timestamp": 1708087648962,
+#    "status": 403,
+#    "success": false,
+#    "message": "Forbidden",
+#    "errors": [
+#        {
+#            "message": "Could not find organization with provided TaxId 03386690170 and Erp System Id SystemERP",
+#            "subCode": "forbidden"
+#        }
+#    ]
+#}
 # This function will receive the paylod and will dinamically generate the SBDH (WIP).. hopefully...
 def delta_send_document(service_url:str,
                      token: str,

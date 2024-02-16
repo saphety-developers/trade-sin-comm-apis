@@ -6,7 +6,7 @@ import time
 import json
 import uuid
 import xml.etree.ElementTree as ET
-from common.xml.sbdh_helper import create_standard_business_document, get_element_by_xpath_in_SCI
+from common.xml.sbdh_helper import create_standard_business_document, get_element_by_xpath_with_namespaces
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_push
 from apis.delta_copai import delta_send_document
@@ -36,6 +36,27 @@ COUNTRY_FORMAT_MAPS = {
 }
 FORMAT_ID_LEGAL = "Legal"
 FORMAT_ID_SCI= "SCI"
+
+XPATH_MAPPINGS = {
+    'SCI': {
+        'sender_vat': "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+        'sender_vat_country': "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+        'receiver_vat': "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+        'receiver_vat_country': "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+        'doc_number': "./cbc:ID"
+    },
+    'IT': {
+        'sender_vat': "./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdCodice",
+        'sender_vat_country': "./FatturaElettronicaHeader/CedentePrestatore/DatiAnagrafici/IdFiscaleIVA/IdPaese",
+        'receiver_vat': "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdCodice",
+        'receiver_vat_country': "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdPaese",
+        'doc_number': "./FatturaElettronicaBody/DatiGenerali/DatiGeneraliDocumento/Numero"
+    },
+    'FR': {
+        'sender_vat': '/party/emisseur/id',
+        'receiver_vat': '/party/recepteur/id',
+    }
+}
 
 def set_logging():
     create_folder_if_no_exists(config.log_folder)
@@ -77,28 +98,51 @@ def push_message(file_path: str, token: str) -> bool:
 
     #file content in xml
     xml_invoice_element = decode_base64_and_get_element(base64_contents)
-    sender_vat_xpath = "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"
-    sender_vat_country_xpath = "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"
-    receiver_vat_xpath = "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"
-    receiver_vat_country_xpath = "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"
-    doc_number_xpath = "./cbc:ID"
+    format_to_get_xpapth = config.format_id
 
-    # Get the name of the root element
-    # Get the local name of the root element without the namespace
-    root_element_name = xml_invoice_element.tag.split('}')[1] if '}' in xml_invoice_element.tag else xml_invoice_element.tag
+    sender_vat_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat']
+    sender_vat_country_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat_country']
+    receiver_vat_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat']
+    receiver_vat_country_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['receiver_vat_country']
+    doc_number_xpath = XPATH_MAPPINGS[format_to_get_xpapth]['doc_number']
 
-    document_type = root_element_name
     sender_system_id = "SystemERP"
     business_service_name = "Default"
 
-    header_version = "1.0"
-    sender_vat = get_element_by_xpath_in_SCI (xml_invoice_element, sender_vat_xpath)
-    sender_vat_country = get_element_by_xpath_in_SCI (xml_invoice_element, sender_vat_country_xpath)
-    receiver_vat = get_element_by_xpath_in_SCI (xml_invoice_element, receiver_vat_xpath)
-    receiver_vat_country = get_element_by_xpath_in_SCI (xml_invoice_element, receiver_vat_country_xpath)
-    doc_number = get_element_by_xpath_in_SCI (xml_invoice_element, doc_number_xpath)
+    # Define namespaces
+    if config.format_id == FORMAT_ID_SCI:
+        namespaces = {
+            'inv': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
+            'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+            'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+            'sbd': 'http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader',
+            'xades': 'http://uri.etsi.org/01903/v1.3.2#',
+            'ad': 'http://www.sovos.com/namespaces/additionalData',
+            'sci': 'http://www.sovos.com/namespaces/sovosCanonicalInvoice',
+            'svs': 'http://www.sovos.com/namespaces/sovosDocument',
+            'sov': 'http://www.sovos.com/namespaces/sovosExtensions',
+            'ds': 'http://www.w3.org/2000/09/xmldsig#',
+            'ext': 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2',
+            'enc':"http://www.sovos.com/namespaces/base64Document" 
+        }
+    else:
+        namespaces = {
+        }
 
-    sender_company_code =  sender_vat_country.text[2:]
+
+    header_version = "1.0"
+    sender_vat = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_xpath, namespaces)
+    sender_vat_country = get_element_by_xpath_with_namespaces (xml_invoice_element, sender_vat_country_xpath, namespaces)
+    receiver_vat = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_xpath, namespaces)
+    receiver_vat_country = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_country_xpath, namespaces)
+    doc_number = get_element_by_xpath_with_namespaces (xml_invoice_element, doc_number_xpath, namespaces)
+
+    # if sender_vat_country len is greater then 2, then we have the country code and the vat number
+    #   in this case we get the compnay code from international the vat number
+    if len(sender_vat_country.text) > 2:
+        sender_company_code =  sender_vat_country.text[2:]
+    else:
+        sender_company_code =  sender_vat.text
 
     scope_version_identifier = "1.2.2"
     document_identification_type_version = "2.1"
@@ -115,6 +159,14 @@ def push_message(file_path: str, token: str) -> bool:
         document_identification_standard = COUNTRY_FORMAT_STANDARD_MAPS.get(sender_vat_country.text[:2])
         scope_mapping = 'LEGAL-TO-SCI_INVOICE'
         is_payload_SCI_UBL = False
+
+    # document_type
+    # Get the local name of the root element without the namespace
+    if is_payload_SCI_UBL:
+        root_element_name = xml_invoice_element.tag.split('}')[1] if '}' in xml_invoice_element.tag else xml_invoice_element.tag
+        document_type = root_element_name
+    else:
+        document_type = COUNTRY_FORMAT_MAPS.get(sender_vat_country.text[:2])
     
     output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country.text[:2])
     document_identification_instance_identifier = sender_document_id_identifier
@@ -159,11 +211,21 @@ def push_message(file_path: str, token: str) -> bool:
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
     result = delta_send_document (service_url=service_url, token=token, data=xml_string_with_sbdh)
-    print(json.dumps(result, indent=4))
     
-    if result["success"] == True:
+    if "errors" in result and result["errors"]:
+        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
+        #iterate over errors
+        for error in result["errors"]:
+            log_console_and_log_debug(f"Error: {error['message']}")
+        logger.debug(json.dumps(result, indent=4))
+        return False
+    if "error" in result:
+        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
+        print(json.dumps(result, indent=4))
+        logger.debug(json.dumps(result, indent=4))
+    if "success" in result and result["success"] == True:
         log_console_and_log_debug(f'File {file_path} uploaded with success.')
-        #log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
+        log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
         if config.save_out_history:
             history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
             create_folder_if_no_exists(history_folder_for_file)

@@ -16,6 +16,7 @@
           "--endpoint=delta-qa",
           "--log-level=debug",
           "--save-out-history",
+          "--format-id=IT",
           "--polling-interval=20"
         ],
         "console": "integratedTerminal",

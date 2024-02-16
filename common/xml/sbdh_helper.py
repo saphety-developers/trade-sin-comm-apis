@@ -1,3 +1,4 @@
+import base64
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
@@ -12,6 +13,23 @@ def create_sovos_document_for_sci_Invoice(invoice_element):
     canonical_invoice.append(invoice_element)
 
     return sovos_document
+
+def create_sovos_document_for_legal_Invoice(invoice_element):
+    #<svs:SovosDocument>
+    sovos_document = ET.Element("svs:SovosDocument")
+    #<svs:SovosLegalDocument>
+    sovos_legal_document = ET.SubElement(sovos_document, "svs:SovosLegalDocument")
+    #<enc:Base64Document>
+    base64_document = ET.SubElement(sovos_legal_document, "enc:Base64Document")
+    #<enc:EmbeddedDocument id="1" fileName="invoice-test-legal-insci.xml" mimeCode="application/xml">
+    embedded_document = ET.SubElement(base64_document, "enc:EmbeddedDocument", id="1", fileName="invoice-test-legal-insci.xml", mimeCode="application/xml")
+    # Add the provided Invoice element as base64 encoded
+    xml_string = ET.tostring(invoice_element, encoding="utf-8", method="xml").decode()
+    data_in_base64 = base64.b64encode(xml_string.encode('utf-8')).decode('utf-8')
+    embedded_document.text = data_in_base64
+    return sovos_document
+
+
 
 #<sbd:Standard>urn:oasis:names:specification:ubl:schema:xsd:Invoice-2</sbd:Standard>
 def create_standard_document_identification(standard):
@@ -159,6 +177,7 @@ def create_standard_business_document(header_version = "1.0",
                             "xmlns:cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
                             "xmlns:cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
                             "xmlns:ext": "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
+                            'xmlns:enc':"http://www.sovos.com/namespaces/base64Document",
                             "xmlns:inv": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"}
                     )
 
@@ -262,26 +281,15 @@ def create_standard_business_document(header_version = "1.0",
     if is_payload_SCI_UBL:
         sovos_document = create_sovos_document_for_sci_Invoice(invoice_element)
         root.append(sovos_document)
+    else:
+        sovos_document = create_sovos_document_for_legal_Invoice(invoice_element)
+        root.append(sovos_document)
    
     return root
 
 
-def get_element_by_xpath_in_SCI(xml_sci_element, xpath):
-    # Define namespaces
-    sci_namespaces = {
-        'inv': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
-        'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-        'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-        'sbd': 'http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader',
-        'xades': 'http://uri.etsi.org/01903/v1.3.2#',
-        'ad': 'http://www.sovos.com/namespaces/additionalData',
-        'sci': 'http://www.sovos.com/namespaces/sovosCanonicalInvoice',
-        'svs': 'http://www.sovos.com/namespaces/sovosDocument',
-        'sov': 'http://www.sovos.com/namespaces/sovosExtensions',
-        'ds': 'http://www.w3.org/2000/09/xmldsig#',
-        'ext': 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2'
-    }
-    result_element = xml_sci_element.find(xpath, sci_namespaces)
+def get_element_by_xpath_with_namespaces(xml_sci_element, xpath, namespaces):
+    result_element = xml_sci_element.find(xpath, namespaces)
 
     return result_element
 

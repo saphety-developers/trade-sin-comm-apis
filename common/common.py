@@ -485,7 +485,7 @@ def parse_args_for_delta_push():
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='COAPI endpoints to send documents to. Use alias for known environments: "delta-dev", "delta-uat", "delta-prd" or specify a custom endpoint...')
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--document-type', type=str, default='Invoice', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
-    parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','Legal'],  help='If not specified defaults to will be infered from file name..')
+    parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','IT'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
@@ -512,7 +512,7 @@ sample usage with all arguments:
                  --log-level info 
                  --log-folder "C:\messages_to_cn\logs"
                  --document-type "DebitNote"
-                 --format-id "SCI-1.0"
+                 --format-id "SCI"
                  --no-app-name
 *Avoid app-secret as command line argument. It will be prompted securely if not specified.
  
