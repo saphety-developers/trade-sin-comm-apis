@@ -161,7 +161,11 @@ def push_message(file_path: str, token: str) -> bool:
 
 
     scope_version_identifier = "1.2.2"
-    document_identification_type_version = "2.1"
+    if config.format_id == FORMAT_ID_SCI:
+        document_identification_type_version = "2.1"
+    else:    
+        document_identification_type_version = "1.2.2"
+    
     process_type_identifier = "Outbound"
     sender_vat = sender_vat_element.text if sender_vat_element is not None else ""
     sender_vat_country = sender_vat_country_element.text if sender_vat_country_element is not None else ""
