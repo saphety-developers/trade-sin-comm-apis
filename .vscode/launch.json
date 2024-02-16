@@ -21,6 +21,24 @@
         ],
         "console": "integratedTerminal",
         "justMyCode": true
+      },
+      {
+        "name": "Push to Delta QA - GIVI - IT 03386690170",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "delta-push.py",
+        "args": [
+          "--app-key=3P9Fx2J4RPmFfJPe9tGlIUkUwcZF7eIX",
+          "--app-secret=jbdNUUADmNfRCMAt",
+          "--keep-alive",
+          "--endpoint=delta-qa",
+          "--log-level=debug",
+          "--save-out-history",
+          "--format-id=IT",
+          "--polling-interval=20"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
       }
     ]
   }
