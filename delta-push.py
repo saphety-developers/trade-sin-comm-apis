@@ -6,13 +6,15 @@ import time
 import json
 import uuid
 import xml.etree.ElementTree as ET
-from common.xml.sbdh_helper import create_standard_business_document, get_element_by_xpath_with_namespaces
+from common.xml.sbdh import StandardBusinessDocumentHeader
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_push
 from apis.delta_copai import delta_send_document
 from apis.cn_copai import get_cn_coapi_token
 from common.file_handling import *
 from common.common import *
+from common.xml.ubl_namespaces import UBL_NAMESPACES_PREFIXES
+from common.xml.xpath_helper import get_element_by_xpath_with_namespaces
 
 DEFAULT_OUT_FOLDER_NAME = 'out'
 DEFAULT_LOG_FOLDER_NAME = 'log'
@@ -112,20 +114,7 @@ def push_message(file_path: str, token: str) -> bool:
 
     # Define namespaces
     if config.format_id == FORMAT_ID_SCI:
-        namespaces = {
-            'inv': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
-            'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-            'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-            'sbd': 'http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader',
-            'xades': 'http://uri.etsi.org/01903/v1.3.2#',
-            'ad': 'http://www.sovos.com/namespaces/additionalData',
-            'sci': 'http://www.sovos.com/namespaces/sovosCanonicalInvoice',
-            'svs': 'http://www.sovos.com/namespaces/sovosDocument',
-            'sov': 'http://www.sovos.com/namespaces/sovosExtensions',
-            'ds': 'http://www.w3.org/2000/09/xmldsig#',
-            'ext': 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2',
-            'enc':"http://www.sovos.com/namespaces/base64Document" 
-        }
+        namespaces = UBL_NAMESPACES_PREFIXES
     else:
         namespaces = {
         }
@@ -138,13 +127,7 @@ def push_message(file_path: str, token: str) -> bool:
     receiver_vat_country_element = get_element_by_xpath_with_namespaces (xml_invoice_element, receiver_vat_country_xpaths, namespaces)
     doc_number_element = get_element_by_xpath_with_namespaces (xml_invoice_element, doc_number_xpaths, namespaces)
 
-    # if sender_vat_country len is greater then 2, then we have the country code and the vat number
-    #   in this case we get the compnay code from international the vat number
-    if len(sender_vat_country_element.text) > 2:
-        sender_company_code =  sender_vat_country_element.text[2:]
-    else:
-        sender_company_code =  sender_vat_element.text
-    
+    # validations to check if we have the required elements for SBDH
     if sender_vat_element is None:
         log_console_and_log_debug(f'Error: could not extract sender VAT with xpaths {sender_vat_xpaths}')
         return False
@@ -159,6 +142,13 @@ def push_message(file_path: str, token: str) -> bool:
     if doc_number_element is None:
         log_console_and_log_debug(f'Warning: could not extract document number with xpaths {doc_number_xpaths}')
 
+
+    # if sender_vat_country len is greater then 2, then we have the country code and the vat number
+    #   in this case we get the compnay code from international the vat number
+    if sender_vat_country_element is not None and len(sender_vat_country_element.text) > 2:
+        sender_company_code =  sender_vat_country_element.text[2:]
+    else:
+        sender_company_code =  sender_vat_element.text
 
     scope_version_identifier = "1.2.2"
     if config.format_id == FORMAT_ID_SCI:
@@ -214,30 +204,54 @@ def push_message(file_path: str, token: str) -> bool:
     print(f"output_schema_identifier: {output_schema_identifier}")
     print(f"document_identification_instance_identifier: {document_identification_instance_identifier}")
     print(f"sender_company_code: {sender_company_code}")
+
+    sddh = StandardBusinessDocumentHeader(
+        header_version = header_version,
+        sender_vat = sender_vat,
+        receiver_vat = receiver_vat,
+        sender_vat_country = sender_vat_country[:2],
+        sender_company_code = sender_company_code,
+        receiver_vat_country = receiver_vat_country[:2],
+        document_identification_standard = document_identification_standard,
+        document_identification_instance_identifier = document_identification_instance_identifier,
+        is_payload_SCI_UBL=is_payload_SCI_UBL,
+        multiple_type_document_identification = multiple_type_document_identification,
+        scope_mapping = scope_mapping,
+        output_schema_identifier = output_schema_identifier,
+        scope_version_identifier = scope_version_identifier,
+        document_identification_type_version = document_identification_type_version,
+        process_type_identifier = process_type_identifier,
+        sender_document_id_identifier = sender_document_id_identifier,
+        document_type = document_type,
+        sender_system_id = sender_system_id,
+        business_service_name = business_service_name, 
+    )
     
-    xml_standard_business_document = create_standard_business_document(
-                                        header_version = header_version,
-                                        sender_vat = sender_vat,
-                                        receiver_vat = receiver_vat,
-                                        sender_vat_country = sender_vat_country[:2],
-                                        sender_company_code = sender_company_code,
-                                        receiver_vat_country = receiver_vat_country[:2],
-                                        document_identification_standard = document_identification_standard,
-                                        document_identification_instance_identifier = document_identification_instance_identifier,
-                                        is_payload_SCI_UBL=is_payload_SCI_UBL,
-                                        multiple_type_document_identification = multiple_type_document_identification,
-                                        scope_mapping = scope_mapping,
-                                        output_schema_identifier = output_schema_identifier,
-                                        scope_version_identifier = scope_version_identifier,
-                                        document_identification_type_version = document_identification_type_version,
-                                        process_type_identifier = process_type_identifier,
-                                        sender_document_id_identifier = sender_document_id_identifier, 
-                                        document_type = document_type,
-                                        sender_system_id = sender_system_id,
-                                        business_service_name = business_service_name,
-                                        invoice_element = xml_invoice_element)
+    # xml_standard_business_document = create_standard_business_document(
+    #                                     header_version = header_version,
+    #                                     sender_vat = sender_vat,
+    #                                     receiver_vat = receiver_vat,
+    #                                     sender_vat_country = sender_vat_country[:2],
+    #                                     sender_company_code = sender_company_code,
+    #                                     receiver_vat_country = receiver_vat_country[:2],
+    #                                     document_identification_standard = document_identification_standard,
+    #                                     document_identification_instance_identifier = document_identification_instance_identifier,
+    #                                     is_payload_SCI_UBL=is_payload_SCI_UBL,
+    #                                     multiple_type_document_identification = multiple_type_document_identification,
+    #                                     scope_mapping = scope_mapping,
+    #                                     output_schema_identifier = output_schema_identifier,
+    #                                     scope_version_identifier = scope_version_identifier,
+    #                                     document_identification_type_version = document_identification_type_version,
+    #                                     process_type_identifier = process_type_identifier,
+    #                                     sender_document_id_identifier = sender_document_id_identifier, 
+    #                                     document_type = document_type,
+    #                                     sender_system_id = sender_system_id,
+    #                                     business_service_name = business_service_name,
+    #                                     invoice_element = xml_invoice_element)
+
+    enveloped_xml = sddh.envelope(xml_invoice_element)
     
-    xml_string_with_sbdh = ET.tostring(xml_standard_business_document, encoding="utf-8", method="xml").decode()
+    xml_string_with_sbdh = ET.tostring(enveloped_xml, encoding="utf-8", method="xml").decode()
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
     result = delta_send_document (service_url=service_url, token=token, data=xml_string_with_sbdh)
