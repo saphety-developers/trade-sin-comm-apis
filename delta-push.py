@@ -87,18 +87,17 @@ def decode_base64_and_get_element(base64_string):
 # push_message
 ##
 def push_message(file_path: str, token: str) -> bool:
-    logger = logging.getLogger('upload_file')
-    logger.debug(f'Uploading file {file_path} started')
+    logger = logging.getLogger('push_message')
 
-    # get just the file name
+    # get just the file name without the path
     filename = os.path.basename(file_path)
+    log_and_debug_message_value('Uploading file', filename)
 
     base64_contents = read_file_to_base64(file_path)
     if base64_contents is None:
-        log_console_and_log_debug(f'Could not read file {file_path} maybe being used by another process')
+        log_console_and_log_debug(f'Error: Could not read file {filename} maybe being used by another process.')
         return False
-    #check if is an SCI file
-
+    
     #file content in xml
     xml_invoice_element = decode_base64_and_get_element(base64_contents)
     format_to_get_xpapth = config.format_id
@@ -162,13 +161,8 @@ def push_message(file_path: str, token: str) -> bool:
     receiver_vat = receiver_vat_element.text if receiver_vat_element is not None else ""
     receiver_vat_country = receiver_vat_country_element.text if receiver_vat_country_element is not None else ""
     doc_number = doc_number_element.text if doc_number_element is not None else ""
-
-
     sender_document_id_identifier = f"{filename}_{doc_number}_{sender_vat_country[:2]}{sender_vat}_{receiver_vat_country[:2]}{receiver_vat}"
-
-
     multiple_type_document_identification = "false"
-
 
     if config.format_id == FORMAT_ID_SCI:
         document_identification_standard = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
@@ -189,21 +183,6 @@ def push_message(file_path: str, token: str) -> bool:
     
     output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country[:2])
     document_identification_instance_identifier = sender_document_id_identifier
-
-    print(f"document_type: {document_type}")
-    print(f"sender_vat: {sender_vat}")
-    print(f"sender_vat_country: {sender_vat_country}")
-    print(f"receiver_vat: {receiver_vat}")
-    print(f"receiver_vat_country: {receiver_vat_country}")
-    print(f"doc_number: {doc_number}")
-    print(f"sender_document_id_identifier: {sender_document_id_identifier}")
-    print(f"scope_mapping: {scope_mapping}")
-    print(f"document_identification_standard: {document_identification_standard}")
-    print(f"is_payload_SCI_UBL: {is_payload_SCI_UBL}")
-    print(f"multiple_type_document_identification: {multiple_type_document_identification}")
-    print(f"output_schema_identifier: {output_schema_identifier}")
-    print(f"document_identification_instance_identifier: {document_identification_instance_identifier}")
-    print(f"sender_company_code: {sender_company_code}")
 
     sddh = StandardBusinessDocumentHeader(
         header_version = header_version,
@@ -227,28 +206,6 @@ def push_message(file_path: str, token: str) -> bool:
         business_service_name = business_service_name, 
     )
     
-    # xml_standard_business_document = create_standard_business_document(
-    #                                     header_version = header_version,
-    #                                     sender_vat = sender_vat,
-    #                                     receiver_vat = receiver_vat,
-    #                                     sender_vat_country = sender_vat_country[:2],
-    #                                     sender_company_code = sender_company_code,
-    #                                     receiver_vat_country = receiver_vat_country[:2],
-    #                                     document_identification_standard = document_identification_standard,
-    #                                     document_identification_instance_identifier = document_identification_instance_identifier,
-    #                                     is_payload_SCI_UBL=is_payload_SCI_UBL,
-    #                                     multiple_type_document_identification = multiple_type_document_identification,
-    #                                     scope_mapping = scope_mapping,
-    #                                     output_schema_identifier = output_schema_identifier,
-    #                                     scope_version_identifier = scope_version_identifier,
-    #                                     document_identification_type_version = document_identification_type_version,
-    #                                     process_type_identifier = process_type_identifier,
-    #                                     sender_document_id_identifier = sender_document_id_identifier, 
-    #                                     document_type = document_type,
-    #                                     sender_system_id = sender_system_id,
-    #                                     business_service_name = business_service_name,
-    #                                     invoice_element = xml_invoice_element)
-
     enveloped_xml = sddh.envelope(xml_invoice_element)
     
     xml_string_with_sbdh = ET.tostring(enveloped_xml, encoding="utf-8", method="xml").decode()
@@ -257,19 +214,19 @@ def push_message(file_path: str, token: str) -> bool:
     result = delta_send_document (service_url=service_url, token=token, data=xml_string_with_sbdh)
     
     if "errors" in result and result["errors"]:
-        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
-        #iterate over errors
+        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
         for error in result["errors"]:
             log_console_and_log_debug(f"Error: {error['message']}")
-        logger.debug(json.dumps(result, indent=4))
+        print(json.dumps(result, indent=4))
+        logger.error(json.dumps(result, indent=4))
         return False
     if "error" in result:
-        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
+        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
         print(json.dumps(result, indent=4))
-        logger.debug(json.dumps(result, indent=4))
+        logger.error(json.dumps(result, indent=4))
     if "success" in result and result["success"] == True:
-        log_console_and_log_debug(f'File {file_path} uploaded with success.')
-        log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
+        log_and_debug_message_value('File upload success:',filename)
+        log_and_debug_message_value('Received transactionId:', result["data"]["transactionId"])
         if config.save_out_history:
             history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
             create_folder_if_no_exists(history_folder_for_file)
@@ -277,12 +234,13 @@ def push_message(file_path: str, token: str) -> bool:
             # also sacve in out history the file enveloped with sbdh
             src_filename = os.path.basename(file_path)
             dst_filename_with_sbdh = os.path.join(history_folder_for_file, src_filename)
-
+            # move file to history folder
             save_text_to_file(f'{dst_filename_with_sbdh}_with_sbdh.xml', xml_string_with_sbdh)
         else:
             delete_file(file_path)  
     else:
-        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
+        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
+        print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
 
 ##
@@ -302,7 +260,7 @@ def push_messges_interval(token):
         while True:
             if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
                 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-                logging.info('Requested new auth token: ' + token)
+                log_and_debug_message_value('Requested new auth token:', token)
                 number_of_poolings = 0
             push_messages(token)
             number_of_poolings+=1
@@ -331,7 +289,7 @@ if config.keep_alive:
     if not config.polling_interval:
         config.polling_interval =  DEFAULT_POLLING_INTERVAL_SECONDS
 if not is_valid_url(config.endpoint):
-    log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
+    log_console_message(f'Error: Invalid endpoint provided: "{config.endpoint}"')
     sys.exit(0)
 
 set_logging()
@@ -350,5 +308,4 @@ if token:
         push_messages(token)
 else:
     log_could_not_get_token()
-
-log_app_ending("Compliance newtwork api push")
+log_app_ending("Delta coapi push")

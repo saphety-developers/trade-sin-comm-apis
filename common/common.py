@@ -264,7 +264,27 @@ def configure_logging(log_file_name: str, log_level: str):
   
     logging.basicConfig(level=l, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename=log_file_name)
 
-def log_console_message(app_message):
+# Print message and value in columns for better readability in console
+def log_message_value(message, value):
+    current_time = datetime.datetime.now()
+    formatted_time = current_time.strftime("%H:%M:%S")
+
+    max_description_length = 20  # Adjust this value based on your requirements
+    separator_position = 25
+    # Truncate action_description if it's too long
+    truncated_description = (message[:max_description_length - 3] + '...') if len(message) > max_description_length else message
+    # Calculate the number of spaces to add between description and values
+    num_spaces = max(0, separator_position - len(truncated_description))
+    # Print the formatted output
+    print(f"{formatted_time} {truncated_description}{' ' * num_spaces}{value}")
+
+def log_and_debug_message_value(message, value):
+    log_message_value(message, value)
+    logging.debug(f'{message} {value}')
+
+
+#deprecated by log_and_debug_message_value and log_message_value
+def log_console_message(app_message, value = ''):
     current_time = datetime.datetime.now()
     formatted_time = current_time.strftime("%H:%M:%S")
     print (formatted_time, app_message,)
@@ -288,11 +308,12 @@ def log_app_cn_push_starting(config: Configuration):
         log_console_and_log_debug(f'CN messaging api client starting - saving histoty set to "{config.out_folder_history}"')
 
 def log_app_delta_push_starting(config: Configuration):
-    log_console_and_log_debug(f'Delta messaging api client starting - listening for files at "{config.out_folder}" every {config.polling_interval} seconds')
-    log_console_and_log_debug(f'Delta messaging api client starting - pushing files to "{config.endpoint}"')
-    log_console_and_log_debug(f'Delta messaging api client starting - logging set to "{config.log_folder}"')
+    log_console_and_log_debug(f'Delta coapi client (push) - Startig...')
+    log_and_debug_message_value('Listening files at:', f"{config.out_folder} every {config.polling_interval} seconds")
+    log_and_debug_message_value('Pushing files to:',config.endpoint)
+    log_and_debug_message_value('Logging set to:',config.log_folder)
     if (config.save_out_history):
-        log_console_and_log_debug(f'Delta messaging api client starting - saving histoty set to "{config.out_folder_history}"')
+        log_and_debug_message_value('Saving history to:',config.out_folder_history)
 
 def log_app_trade_pull_starting(config: Configuration):
     log_console_and_log_debug(f'Trade messaging api client starting - pulling messages from "{config.endpoint}" every {config.polling_interval} seconds')
@@ -316,11 +337,12 @@ def log_app_cn_pull_starting(config: Configuration):
         log_console_and_log_debug(f'CN api client starting - saving histoty set to "{config.in_history}"')
 
 def log_app_delta_pull_starting(config: Configuration):
-    log_console_and_log_debug(f'Delta notifications api client starting - pulling messages from "{config.endpoint}" every {config.polling_interval} seconds')
-    log_console_and_log_debug(f'Delta notifications api client starting - writting files to "{config.in_folder}"')
-    log_console_and_log_debug(f'Delta notifications api client starting - logging set to "{config.log_folder}"')
+    log_console_and_log_debug('Delta coapi client (pull) - Startig...')
+    log_and_debug_message_value('Listening notifications at:', f"{config.endpoint} every {config.polling_interval} seconds")
+    log_and_debug_message_value('Saving notifications to:', config.in_folder)
+    log_and_debug_message_value('Logging set to:', config.log_folder)
     if (config.in_history):
-        log_console_and_log_debug(f'Delta notifications api client starting - saving histoty set to "{config.in_history}"')
+        log_and_debug_message_value('Saving history to:',config.in_history)
 
 def log_app_sin_search_starting(config: Configuration):
     log_console_and_log_debug(f'SIN api client starting - searching documents from "{config.endpoint}"')

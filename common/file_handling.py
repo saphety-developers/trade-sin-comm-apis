@@ -83,7 +83,6 @@ def move_file(src_path, dst_folder):
 
     # Move the source file to the destination folder
     shutil.move(src_path, dst_filename)
-    print(f"File moved to: {dst_filename}")
 
 def delete_file(file_path):
     try:
