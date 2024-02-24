@@ -4,7 +4,7 @@
 
 1. Install Python: download from https://www.python.org/downloads/
 
-2. Install additional Python module (run in command line): pip install requests
+2. Install additional Python module (run in command line): pip install requests keyboard
 
 3. Clone repository from GitHub: https://github.com/saphety-developers/trade-sin-comm-apis.git
 

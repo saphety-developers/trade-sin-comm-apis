@@ -37,7 +37,7 @@ def save_notification(notification):
     erp_document_id = notification["metadata"]["erpDocumentId"]
     tax_id = notification["metadata"]["taxId"]    
 
-    filename = tax_id + '_' + erp_document_id + '_' + notification["notificationId"] + '.xml'
+    filename = f'{tax_id}_{erp_document_id}_{notification["notificationId"]}.xml'
     filePathAndName = os.path.join(config.in_folder, filename)
 
     content_to_save = notification["content"]
@@ -46,7 +46,15 @@ def save_notification(notification):
     ba64decode = ba64decode.decode('utf-8')
     
     save_text_to_file(filePathAndName, ba64decode)
-    print (f' Savig notificationId: { notification["notificationId"]}- {notification["metadata"]["taxId"]} to file {filePathAndName}...')
+    log_and_debug_message_value('notificationId:',notification["notificationId"])
+    log_and_debug_message_value('correlationId:',notification["correlationId"])
+    log_and_debug_message_value('processType:',notification["metadata"]["processType"])
+    log_and_debug_message_value('sciCloudStatusCode:',notification["metadata"]["sciCloudStatusCode"])
+    log_and_debug_message_value('productId:',notification["metadata"]["productId"])
+    log_and_debug_message_value('documentId:',notification["metadata"]["documentId"])
+    log_and_debug_message_value('Saved to:', filename)
+
+
     if config.save_in_history:
         history_folder_for_file = append_date_time_subfolders(config.in_history)
         create_folder_if_no_exists(history_folder_for_file)
@@ -61,7 +69,7 @@ def save_notification(notification):
         if "errors" in response:
             # iterate over errors
             for idx, error in enumerate(response["errors"]):
-                log_console_and_log_debug(f'Error acknowledging notification {notification["notificationId"]}: {error["message"]}')
+                console_and_log_error_message(f'Error acknowledging {notification["notificationId"]}: {error["message"]}')
     return None
 
 #
@@ -72,8 +80,7 @@ def pull_messages(token:str, country_code, tax_id):
 
     # TODO query parameters must be url setedas config variables
     service_url = config.endpoint + '/' + config.api_version + '/notifications'
-
-    log_console_and_log_debug (f'Pulling notifications for {country_code}-{tax_id}-{config.source_system_id}...' , )
+    log_and_debug_message_value('Pulling notifications:', f'{country_code}{tax_id}:{config.source_system_id}')
     result = delta_get_notifications(service_url=service_url,
                                         token=token,
                                         country_code=country_code,
@@ -82,12 +89,13 @@ def pull_messages(token:str, country_code, tax_id):
                                         page_size=DEFAULT_PAGE_QUANTITY)
     logger.debug(json.dumps(result, indent=4))
     if "errors" in result:
-        log_console_and_log_debug(f'Error pulling notifications for {country_code}-{tax_id}-{config.source_system_id}...')
+        console_and_log_error_message(f'Error pulling notifications for {country_code}{tax_id}:{config.source_system_id}')
         #iterate over errors
         for idx, error in enumerate(result["errors"]):
-            log_console_and_log_debug(f'Error {idx}: {error["message"]}')
+            console_and_log_error_message(f'Error: {error["message"]}')
         return
     if "error" in result:
+        console_and_log_error_message(f'Error pulling notifications for {country_code}{tax_id}:{config.source_system_id}')
         print(json.dumps(result, indent=4))
         return
     #print(json.dumps(result, indent=4))
@@ -108,6 +116,7 @@ def pull_messages(token:str, country_code, tax_id):
     logger.debug(json.dumps(result, indent=4))
     return None
 
+
 #
 # pull_messges_interval
 #
@@ -117,15 +126,15 @@ def pull_messges_interval(token):
         while True:
             if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-                logging.info('Requested new auth token: ' + token)
+                log_and_debug_message_value('Requested new auth token:', token)
             for tax_id in config.tax_ids_to_pull_notifications:
                 for country_code in config.countries_to_pull_notifications:
                     pull_messages(token, country_code, tax_id)
                 number_of_poolings+=1
-                time.sleep(config.polling_interval)  # wait for x sec
+                wait_console_indicator(config.polling_interval)
+                #time.sleep(config.polling_interval)  # wait for x sec
     except KeyboardInterrupt:
-        log_console_and_log_debug("Exiting program by user interrupt...")
-        logging.info ('Exiting program by user interrupt...')
+        console_and_log_error_message("Exiting program by user interrupt...")
 
 def set_in_folder():
     in_dir = os.path.join(os.getcwd(), 'in')

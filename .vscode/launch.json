@@ -35,7 +35,32 @@
           "--log-level=debug",
           "--save-out-history",
           "--format-id=IT",
-          "--polling-interval=20"
+          "--polling-interval=70",
+          "--out-folder=C:\\tmp\\messaging-test\\03386690170\\out",
+          "--out-folder-history=C:\\tmp\\messaging-test\\03386690170\\history\\out",
+          "--log-folder=C:\\tmp\\messaging-test\\03386690170\\log",
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
+      },
+      {
+        "name": "Push to Delta QA - KSA SUpplier - SA 123456789123456",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "delta-push.py",
+        "args": [
+          "--app-key=JyTPUBvafFd5hfOpGqTAQz20bTvHwbwc",
+          "--app-secret=uI17AlUfwZrsBIry",
+          "--keep-alive",
+          "--endpoint=delta-qa",
+          "--log-level=debug",
+          "--save-out-history",
+          "--format-id=SCI",
+          "--polling-interval=20",
+          "--out-folder=C:\\tmp\\messaging-test\\123456789123456\\out",
+          "--out-folder-history=C:\\tmp\\messaging-test\\123456789123456\\history\\out",
+          "--log-folder=C:\\tmp\\messaging-test\\123456789123456\\log",
+          "--company-branch=SA123456789123456-BRANCH"
         ],
         "console": "integratedTerminal",
         "justMyCode": true

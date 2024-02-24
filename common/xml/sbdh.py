@@ -23,7 +23,8 @@ class StandardBusinessDocumentHeader:
                  sender_document_id_identifier=None,
                  document_type="Invoice",
                  sender_system_id="SystemERP",
-                 business_service_name="Default"):
+                 business_service_name="Default",
+                 company_branch=None):
         self.header_version = header_version
         self.sender_vat = sender_vat
         self.receiver_vat = receiver_vat
@@ -43,6 +44,7 @@ class StandardBusinessDocumentHeader:
         self.document_type = document_type
         self.sender_system_id = sender_system_id
         self.business_service_name = business_service_name
+        self.company_branch = company_branch
 
     def envelope(self, invoice_element):
             #<sbd:StandardBusinessDocument xmlns=....
@@ -55,8 +57,8 @@ class StandardBusinessDocumentHeader:
             #<sbd:Sender>
             #  <sbd:Identifier Authority="IT">03386690170</sbd:Identifier>
             #</sbd:Sender>
-            sender_element = self.create_sender_element(self.sender_vat_country, self.sender_vat[2:])
-            receiver_element = self.create_receiver_element(self.receiver_vat_country, self.receiver_vat[2:])
+            sender_element = self.create_sender_element(self.sender_vat_country, self.sender_company_code)
+            receiver_element = self.create_receiver_element(self.receiver_vat_country, self.receiver_vat)
             sbd_header.append(sender_element)
             sbd_header.append(receiver_element)
 
@@ -140,6 +142,14 @@ class StandardBusinessDocumentHeader:
             #  </sbd:BusinessService>
             #</sbd:Scope>
             business_scope.append(self.create_scope_business_process_element(self.business_service_name))
+
+            if self.company_branch is not None:
+                #<sbd:Scope>
+                #  <sbd:Type>Branch</sbd:Type>
+                #  <sbd:InstanceIdentifier/>
+                #  <sbd:Identifier>BranchCode</sbd:Identifier>
+                #</sbd:Scope>
+                business_scope.append(self.create_scope_element("Branch", self.company_branch))
 
             # Append the provided invoice_element
             if self.is_payload_SCI_UBL:

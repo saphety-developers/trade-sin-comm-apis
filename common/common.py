@@ -2,10 +2,56 @@ from argparse import Namespace
 import argparse
 import datetime 
 import logging
+import msvcrt
+import select
+import sys
+import time
 from urllib.parse import urlparse
 from common.configuration import Configuration, Configuration3 
 import csv
 from io import StringIO
+import keyboard
+
+def seconds_to_human_readable(seconds):
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    time_components = []
+
+    if hours > 0:
+        time_components.append(f"{hours} {'hour' if hours == 1 else 'hours'}")
+    if minutes > 0:
+        time_components.append(f"{minutes} {'minute' if minutes == 1 else 'minutes'}")
+    if seconds > 0 or not time_components:
+        time_components.append(f"{seconds} {'second' if seconds == 1 else 'seconds'}")
+
+    return ', '.join(time_components)
+
+def wait_console_indicator(interval):
+  remaining_time = interval
+  while remaining_time > 0:
+    if keyboard.is_pressed('enter') or keyboard.is_pressed('space'):
+      print(" " * 64, end='\r')
+      break
+
+    underscores = '_' * remaining_time
+    yellow = "\033[33m"
+    reset = "\033[0m"
+    bg_red = "\033[41m"
+    n = 3 - len(str(remaining_time))
+    spaces = " " * n
+
+    progress_text = f"{yellow}{underscores}{reset}"
+    counter_text = f"{bg_red} {str(remaining_time)}{spaces}{reset}"
+    #only display progress in last minute
+    if remaining_time < 60:
+      print (f"{progress_text}{counter_text}", end='\r')
+    else:
+      counter_readable = seconds_to_human_readable(remaining_time)
+      print (counter_readable, end='\r')
+    time.sleep(1)
+    remaining_time -= 1
+
 
 def command_line_arguments_to_configuration2(args: Namespace) -> Configuration:
   config = Configuration()
@@ -158,7 +204,8 @@ def command_line_arguments_to_delta_push_configuration(args: Namespace) -> Confi
     config.out_folder_history = args.out_folder_history
   if hasattr(args, 'polling_interval'):
     config.polling_interval = args.polling_interval
-
+  if hasattr(args, 'company_branch'):
+    config.company_branch = args.company_branch
     
   config.log_folder = args.log_folder
   config.print_app_name = args.no_app_name
@@ -282,6 +329,38 @@ def log_and_debug_message_value(message, value):
     log_message_value(message, value)
     logging.debug(f'{message} {value}')
 
+
+def console_and_log_error_message(message):
+    colors = {
+        "Black": "\033[30m",
+        "Red": "\033[31m",
+        "Green": "\033[32m",
+        "Yellow": "\033[33m",
+        "Blue": "\033[34m",
+        "Magenta": "\033[35m",
+        "Cyan": "\033[36m",
+        "White": "\033[37m",
+        "Bright Black": "\033[90m",
+        "Bright Red": "\033[91m",
+        "Bright Green": "\033[92m",
+        "Bright Yellow": "\033[93m",
+        "Bright Blue": "\033[94m",
+        "Bright Magenta": "\033[95m",
+        "Bright Cyan": "\033[96m",
+        "Background Black": "\033[40m",
+        "Background Red": "\033[41m",
+        "Background Green": "\033[42m",
+        "Background Yellow": "\033[43m",
+        "Background Blue": "\033[44m",
+        "Background Magenta": "\033[45m",
+        "Background Cyan": "\033[46m",
+        "Background White": "\033[47m",
+        "Reset": "\033[0m"
+    }
+    message_in_color = f"{colors['Red']}{message}{colors['Reset']}"
+    print(message_in_color)
+    logging.debug(message)
+  
 
 #deprecated by log_and_debug_message_value and log_message_value
 def log_console_message(app_message, value = ''):
@@ -508,6 +587,7 @@ def parse_args_for_delta_push():
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--document-type', type=str, default='Invoice', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','IT'],  help='If not specified defaults to will be infered from file name..')
+    parser.add_argument('--company-branch',  metavar='<Company branch>', type=str, required=False,  help='Used for KSA outbound documents.')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
@@ -526,6 +606,7 @@ sample usage with all arguments:
   %(prog)s  --app-key 6D9Ux2J4KPaFfTPe9tGlIUfPwcZF7fVI
                  --app-secret kdeOJJPCiPsTWAGO 
                  --endpoint https://api-internal.sovos.com
+                 --company-branch 123456_BRANCH01
                  --keep-alive 
                  --polling-interval 30
                  --out-folder "C:\messages_to_cn\ou" 

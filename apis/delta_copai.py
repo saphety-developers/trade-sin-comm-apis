@@ -135,6 +135,19 @@ def delta_get_notifications(service_url: str, token: str, country_code: str, tax
     logger.debug(f'Get notifications response serialized: {json.dumps(json_response, indent=4)}')
     return response.json()
 
+#Error response type (json_response):
+# {
+#    "timestamp": 1708537703249,
+#    "status": 403,
+#    "success": false,
+#    "message": "Forbidden",
+#    "errors": [
+#        {
+#            "message": "User is not eligible to get notifications for `300075588700003` TaxId.",
+#            "subCode": "forbidden"
+#        }
+#    ]
+#}
 # Success response type (json_response):
 # {
 #   "status": 200,

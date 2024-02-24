@@ -32,19 +32,59 @@ COUNTRY_FORMAT_STANDARD_MAPS = {
 }
 COUNTRY_FORMAT_MAPS = {
     "IT": "FatturaPA",
-    "SA": "sa",
+    "SA": "UBLInvoice",
     "HU": "hu",
     "PO": "po"
 }
 FORMAT_ID_LEGAL = "Legal"
 FORMAT_ID_SCI= "SCI"
 
+DOCUMENT_IDENTIFICATION_TYPE_VERSION_WHEN_USING_SCI = {
+    "IT": "2.1",
+    "SA": "2.1",
+    "HU": "hu",
+    "PO": "po"
+}
+DOCUMENT_IDENTIFICATION_TYPE_VERSION_WHEN_USING_LEGAL= {
+    "IT": "1.2.2",
+    "SA": "1.2",
+    "HU": "hu",
+    "PO": "po"
+}
+
+SCOPE_VERSION_WHEN_USING_SCI = {
+    "IT": "1.2.2",
+    "SA": "1.0",
+    "HU": "hu",
+    "PO": "po"
+}
+SCOPE_VERSION_WHEN_USING_LEGAL = {
+    "IT": "1.2.2",
+    "SA": "1.0",
+    "HU": "hu",
+    "PO": "po"
+}
+
+
 XPATH_MAPPINGS = {
     'SCI': {
-        'sender_vat': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
-        'sender_vat_country': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
-        'receiver_vat': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
-        'receiver_vat_country': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']"],
+        'sender_vat': [
+                            "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+                            "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='HQ']",
+                            "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='CRN']"
+                        ],
+        'sender_vat_country':[
+                                "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+                                "./cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode"
+                            ],
+        'receiver_vat': [
+                            "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+                            "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='NAT']"
+                         ],
+        'receiver_vat_country': [
+                            "./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
+                            "./cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode"
+                            ],
         'doc_number': ["./cbc:ID"]
     },
     'IT': {
@@ -60,6 +100,7 @@ XPATH_MAPPINGS = {
         'receiver_vat': ['/party/recepteur/id'],
     }
 }
+
 
 def set_logging():
     create_folder_if_no_exists(config.log_folder)
@@ -80,7 +121,7 @@ def decode_base64_and_get_element(base64_string):
         
         return xml_element
     except Exception as e:
-        print(f"Error decoding Base64 or parsing XML: {e}")
+        console_and_log_error_message(f"Error decoding Base64 or parsing XML: {e}")
         return None
     
 ##
@@ -100,6 +141,12 @@ def push_message(file_path: str, token: str) -> bool:
     
     #file content in xml
     xml_invoice_element = decode_base64_and_get_element(base64_contents)
+    if xml_invoice_element is None:
+        log_console_and_log_debug(f'Error: Could not parse XML from file {filename}')
+        return False
+    if xml_invoice_element is None:
+        log_console_and_log_debug(f'Error: Could not parse XML from file {filename}')
+        return False
     format_to_get_xpapth = config.format_id
 
     sender_vat_xpaths = XPATH_MAPPINGS[format_to_get_xpapth]['sender_vat']
@@ -128,13 +175,13 @@ def push_message(file_path: str, token: str) -> bool:
 
     # validations to check if we have the required elements for SBDH
     if sender_vat_element is None:
-        log_console_and_log_debug(f'Error: could not extract sender VAT with xpaths {sender_vat_xpaths}')
+        console_and_log_error_message(f'Error: could not extract sender VAT with xpaths {sender_vat_xpaths}')
         return False
     if sender_vat_country_element is None:
-        log_console_and_log_debug(f'Error: could not extract sender VAT country with xpaths {sender_vat_country_xpaths}')
+        console_and_log_error_message(f'Error: could not extract sender VAT country with xpaths {sender_vat_country_xpaths}')
         return False
     if receiver_vat_element is None:
-        log_console_and_log_debug(f'Error: could not extract receiver VAT with xpaths {receiver_vat_xpaths}')
+        console_and_log_error_message(f'Error: could not extract receiver VAT with xpaths {receiver_vat_xpaths}')
         return False
     if receiver_vat_country_element is None:
         log_console_and_log_debug(f'Warning: could not extract receiver VAT country with xpaths {receiver_vat_country_xpaths}')
@@ -149,11 +196,8 @@ def push_message(file_path: str, token: str) -> bool:
     else:
         sender_company_code =  sender_vat_element.text
 
-    scope_version_identifier = "1.2.2"
-    if config.format_id == FORMAT_ID_SCI:
-        document_identification_type_version = "2.1"
-    else:    
-        document_identification_type_version = "1.2.2"
+    console_and_log_error_message(f"sender_company_code: {sender_company_code}")
+
     
     process_type_identifier = "Outbound"
     sender_vat = sender_vat_element.text if sender_vat_element is not None else ""
@@ -164,11 +208,16 @@ def push_message(file_path: str, token: str) -> bool:
     sender_document_id_identifier = f"{filename}_{doc_number}_{sender_vat_country[:2]}{sender_vat}_{receiver_vat_country[:2]}{receiver_vat}"
     multiple_type_document_identification = "false"
 
+
     if config.format_id == FORMAT_ID_SCI:
+        document_identification_type_version = DOCUMENT_IDENTIFICATION_TYPE_VERSION_WHEN_USING_SCI.get(sender_vat_country[:2])
+        scope_version_identifier = SCOPE_VERSION_WHEN_USING_SCI.get(sender_vat_country[:2])
         document_identification_standard = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
         scope_mapping = 'SCI-TO-LEGAL_INVOICE'
         is_payload_SCI_UBL = True
-    else:
+    else:    
+        document_identification_type_version = DOCUMENT_IDENTIFICATION_TYPE_VERSION_WHEN_USING_LEGAL.get(sender_vat_country[:2])
+        scope_version_identifier = SCOPE_VERSION_WHEN_USING_SCI.get(sender_vat_country[:2])
         document_identification_standard = COUNTRY_FORMAT_STANDARD_MAPS.get(sender_vat_country[:2])
         scope_mapping = 'LEGAL-TO-SCI_INVOICE'
         is_payload_SCI_UBL = False
@@ -183,6 +232,8 @@ def push_message(file_path: str, token: str) -> bool:
     
     output_schema_identifier = COUNTRY_FORMAT_MAPS.get(sender_vat_country[:2])
     document_identification_instance_identifier = sender_document_id_identifier
+
+    company_branch = config.company_branch
 
     sddh = StandardBusinessDocumentHeader(
         header_version = header_version,
@@ -204,44 +255,47 @@ def push_message(file_path: str, token: str) -> bool:
         document_type = document_type,
         sender_system_id = sender_system_id,
         business_service_name = business_service_name, 
+        company_branch=company_branch
     )
     
     enveloped_xml = sddh.envelope(xml_invoice_element)
     
     xml_string_with_sbdh = ET.tostring(enveloped_xml, encoding="utf-8", method="xml").decode()
+
+    # File name for the file with SBDH
+    history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
+    original_filename = os.path.basename(file_path)
+    final_filename_with_sbdh = os.path.join(history_folder_for_file, original_filename + '_with_sbdh.xml')
+    create_folder_if_no_exists(history_folder_for_file)
+    save_text_to_file(final_filename_with_sbdh, xml_string_with_sbdh)
     
     service_url = config.endpoint + '/' + config.api_version + '/documents'
     result = delta_send_document (service_url=service_url, token=token, data=xml_string_with_sbdh)
+
     
     if "errors" in result and result["errors"]:
-        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
+        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
         for error in result["errors"]:
-            log_console_and_log_debug(f"Error: {error['message']}")
+            console_and_log_error_message(f"Error: {error['message']}")
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
         return False
     if "error" in result:
-        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
+        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
     if "success" in result and result["success"] == True:
         log_and_debug_message_value('File upload success:',filename)
         log_and_debug_message_value('Received transactionId:', result["data"]["transactionId"])
         if config.save_out_history:
-            history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
-            create_folder_if_no_exists(history_folder_for_file)
             move_file(src_path=file_path, dst_folder = history_folder_for_file)
-            # also sacve in out history the file enveloped with sbdh
-            src_filename = os.path.basename(file_path)
-            dst_filename_with_sbdh = os.path.join(history_folder_for_file, src_filename)
-            # move file to history folder
-            save_text_to_file(f'{dst_filename_with_sbdh}_with_sbdh.xml', xml_string_with_sbdh)
         else:
             delete_file(file_path)  
     else:
-        log_console_and_log_debug(f'Error uploading file {filename} see server response log for details.')
+        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
+    
 
 ##
 # push_messages
@@ -264,10 +318,9 @@ def push_messges_interval(token):
                 number_of_poolings = 0
             push_messages(token)
             number_of_poolings+=1
-            time.sleep(config.polling_interval)  # wait for x sec
+            wait_console_indicator(config.polling_interval)
     except KeyboardInterrupt:
-        log_console_message("Exiting program by user interrupt...")
-        logging.info ('Exiting program by user interrupt...')
+        console_and_log_error_message("Exiting program by user interrupt...")
 
 ##
 # Main - Application starts here
