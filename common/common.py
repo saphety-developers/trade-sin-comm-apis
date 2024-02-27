@@ -586,7 +586,7 @@ def parse_args_for_delta_push():
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='COAPI endpoints to send documents to. Use alias for known environments: "delta-dev", "delta-uat", "delta-prd" or specify a custom endpoint...')
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--document-type', type=str, default='Invoice', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
-    parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','IT'],  help='If not specified defaults to will be infered from file name..')
+    parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','IT', 'SA', 'RO'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--company-branch',  metavar='<Company branch>', type=str, required=False,  help='Used for KSA outbound documents.')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')

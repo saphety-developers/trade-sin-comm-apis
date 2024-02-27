@@ -44,23 +44,23 @@
         "justMyCode": true
       },
       {
-        "name": "Push to Delta QA - KSA SUpplier - SA 123456789123456",
+        "name": "Push to Delta QA - KSA SUpplier - SA 300075588700003",
         "type": "debugpy",
         "request": "launch",
         "program": "delta-push.py",
         "args": [
-          "--app-key=JyTPUBvafFd5hfOpGqTAQz20bTvHwbwc",
-          "--app-secret=uI17AlUfwZrsBIry",
+          "--app-key=e7Amc8ePCv5iBEY8U53xXWWIAWy3byqF",
+          "--app-secret=lBtATOg1VqL7lFyR",
           "--keep-alive",
           "--endpoint=delta-qa",
           "--log-level=debug",
           "--save-out-history",
-          "--format-id=SCI",
+          "--format-id=SA",
           "--polling-interval=20",
-          "--out-folder=C:\\tmp\\messaging-test\\123456789123456\\out",
-          "--out-folder-history=C:\\tmp\\messaging-test\\123456789123456\\history\\out",
-          "--log-folder=C:\\tmp\\messaging-test\\123456789123456\\log",
-          "--company-branch=SA123456789123456-BRANCH"
+          "--out-folder=C:\\tmp\\messaging-test\\SA300075588700003\\out",
+          "--out-folder-history=C:\\tmp\\messaging-test\\SA300075588700003\\history\\out",
+          "--log-folder=C:\\tmp\\messaging-test\\SA300075588700003\\log",
+          "--company-branch=SA300075588700003-BRANCH"
         ],
         "console": "integratedTerminal",
         "justMyCode": true

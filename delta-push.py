@@ -26,7 +26,7 @@ config: Configuration
 
 COUNTRY_FORMAT_STANDARD_MAPS = {
     "IT": "https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/formato-fatturapa/",
-    "SA": "sa",
+    "SA": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
     "HU": "hu",
     "PO": "po"
 }
@@ -38,6 +38,7 @@ COUNTRY_FORMAT_MAPS = {
 }
 FORMAT_ID_LEGAL = "Legal"
 FORMAT_ID_SCI= "SCI"
+FORMAT_ID_LEGAL_SA= "SA"
 
 DOCUMENT_IDENTIFICATION_TYPE_VERSION_WHEN_USING_SCI = {
     "IT": "2.1",
@@ -94,6 +95,20 @@ XPATH_MAPPINGS = {
                          "./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/CodiceFiscale"],
         'receiver_vat_country': ["./FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici/IdFiscaleIVA/IdPaese"],
         'doc_number': ["./FatturaElettronicaBody/DatiGenerali/DatiGeneraliDocumento/Numero"]
+    },
+    'SA': {
+        'sender_vat': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='CRN']"],
+        'sender_vat_country': ["./cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode"],
+        'receiver_vat': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='NAT']"],
+        'receiver_vat_country': ["./cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode"],
+        'doc_number': ["./cbc:ID"]
+    },
+    'RO': {
+        'sender_vat': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID"],
+        'sender_vat_country': ["./cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID"],
+        'receiver_vat': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID"],
+        'receiver_vat_country': ["./cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID"],
+        'doc_number': ["./cbc:ID"]
     },
     'FR': {
         'sender_vat': ['/party/emisseur/id'],
@@ -159,7 +174,7 @@ def push_message(file_path: str, token: str) -> bool:
     business_service_name = "Default"
 
     # Define namespaces
-    if config.format_id == FORMAT_ID_SCI:
+    if config.format_id == FORMAT_ID_SCI or config.format_id == FORMAT_ID_LEGAL_SA:
         namespaces = UBL_NAMESPACES_PREFIXES
     else:
         namespaces = {
