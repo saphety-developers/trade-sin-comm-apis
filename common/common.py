@@ -7,10 +7,13 @@ import select
 import sys
 import time
 from urllib.parse import urlparse
-from common.configuration import Configuration, Configuration3 
+from common.configuration import Configuration, Configuration3
+from common.console import console_log_message_value 
+from common.messages import MessageType
 import csv
 from io import StringIO
 import keyboard
+from common.messages import Messages
 
 def seconds_to_human_readable(seconds):
     hours, remainder = divmod(seconds, 3600)
@@ -181,63 +184,6 @@ def command_line_arguments_to_cn_pull_configuration(args: Namespace) -> Configur
   config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
   return config
 
-def command_line_arguments_to_delta_push_configuration(args: Namespace) -> Configuration:
-  config = Configuration()
-  config.app_key = args.app_key
-  config.app_secret = args.app_secret
-  config.keep_alive = args.keep_alive
-  config.log_level = args.log_level
-
-  if hasattr(args, 'format_id'):
-    config.format_id = args.format_id
-  else:
-      config.format_id = 'SCI'
-  if hasattr(args, 'save_out_history'):
-    config.save_out_history = args.save_out_history
-  if hasattr(args, 'save_in_history'):
-    config.save_in_history = args.save_in_history
-  if hasattr(args, 'out_folder'):
-    config.out_folder = args.out_folder
-  if hasattr(args, 'in_folder'):
-    config.in_folder = args.in_folder
-  if hasattr(args, 'out_folder_history'):
-    config.out_folder_history = args.out_folder_history
-  if hasattr(args, 'polling_interval'):
-    config.polling_interval = args.polling_interval
-  if hasattr(args, 'company_branch'):
-    config.company_branch = args.company_branch
-    
-  config.log_folder = args.log_folder
-  config.print_app_name = args.no_app_name
-  config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
-  return config
-
-def command_line_arguments_to_delta_pull_configuration(args: Namespace) -> Configuration:
-  config = Configuration()
-  config.app_key = args.app_key
-  config.app_secret = args.app_secret
-  config.keep_alive = args.keep_alive
-  config.log_level = args.log_level
-
-  config.acknowledge_notifications = not args.do_not_acknowledge_notifications
-  config.countries_to_pull_notifications = args.countries 
-  config.tax_ids_to_pull_notifications = args.tax_ids
-  
-  if hasattr(args, 'save_in_history'):
-    config.save_in_history = args.save_in_history
-  if hasattr(args, 'in_folder'):
-    config.in_folder = args.in_folder
-  if hasattr(args, 'in_folder_history'):
-    config.in_history = args.in_folder_history
-  if hasattr(args, 'polling_interval'):
-    config.polling_interval = args.polling_interval
- 
-  config.log_folder = args.log_folder
-  config.print_app_name = args.no_app_name
-  config.endpoint = get_endpoint_entry_by_alias(args.endpoint) if get_endpoint_entry_by_alias(args.endpoint) is not None else args.endpoint
-  return config
-
-
 def get_endpoint_entry_by_alias(alias: str) -> str:
   endpoints_dict = {
     'int': 'https://saphetydoc-int.saphety.com/TradeHttp/MessageServiceRest',
@@ -295,7 +241,7 @@ def get_past_date_as_string(days_behind: int):
 
 def is_required_a_new_auth_token(polling_interval: int, number_of_poolings_with_current_token: int) -> bool:
     min_time_elapsed = number_of_poolings_with_current_token * polling_interval
-    token_validation = 60 # 1 minutos
+    token_validation = 120 # 1 minutos
     if min_time_elapsed > token_validation:
         return True
     return False
@@ -310,25 +256,6 @@ def configure_logging(log_file_name: str, log_level: str):
         l = logging.DEBUG
   
     logging.basicConfig(level=l, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename=log_file_name)
-
-# Print message and value in columns for better readability in console
-def log_message_value(message, value):
-    current_time = datetime.datetime.now()
-    formatted_time = current_time.strftime("%H:%M:%S")
-
-    max_description_length = 20  # Adjust this value based on your requirements
-    separator_position = 25
-    # Truncate action_description if it's too long
-    truncated_description = (message[:max_description_length - 3] + '...') if len(message) > max_description_length else message
-    # Calculate the number of spaces to add between description and values
-    num_spaces = max(0, separator_position - len(truncated_description))
-    # Print the formatted output
-    print(f"{formatted_time} {truncated_description}{' ' * num_spaces}{value}")
-
-def log_and_debug_message_value(message, value):
-    log_message_value(message, value)
-    logging.debug(f'{message} {value}')
-
 
 def console_and_log_error_message(message):
     colors = {
@@ -386,14 +313,6 @@ def log_app_cn_push_starting(config: Configuration):
     if (config.save_out_history):
         log_console_and_log_debug(f'CN messaging api client starting - saving histoty set to "{config.out_folder_history}"')
 
-def log_app_delta_push_starting(config: Configuration):
-    log_console_and_log_debug(f'Delta coapi client (push) - Startig...')
-    log_and_debug_message_value('Listening files at:', f"{config.out_folder} every {config.polling_interval} seconds")
-    log_and_debug_message_value('Pushing files to:',config.endpoint)
-    log_and_debug_message_value('Logging set to:',config.log_folder)
-    if (config.save_out_history):
-        log_and_debug_message_value('Saving history to:',config.out_folder_history)
-
 def log_app_trade_pull_starting(config: Configuration):
     log_console_and_log_debug(f'Trade messaging api client starting - pulling messages from "{config.endpoint}" every {config.polling_interval} seconds')
     log_console_and_log_debug(f'Trade messaging api client starting - writting files to "{config.in_folder}"')
@@ -414,14 +333,6 @@ def log_app_cn_pull_starting(config: Configuration):
     log_console_and_log_debug(f'CN api client starting - logging set to "{config.log_folder}"')
     if (config.in_history):
         log_console_and_log_debug(f'CN api client starting - saving histoty set to "{config.in_history}"')
-
-def log_app_delta_pull_starting(config: Configuration):
-    log_console_and_log_debug('Delta coapi client (pull) - Startig...')
-    log_and_debug_message_value('Listening notifications at:', f"{config.endpoint} every {config.polling_interval} seconds")
-    log_and_debug_message_value('Saving notifications to:', config.in_folder)
-    log_and_debug_message_value('Logging set to:', config.log_folder)
-    if (config.in_history):
-        log_and_debug_message_value('Saving history to:',config.in_history)
 
 def log_app_sin_search_starting(config: Configuration):
     log_console_and_log_debug(f'SIN api client starting - searching documents from "{config.endpoint}"')
@@ -587,7 +498,9 @@ def parse_args_for_delta_push():
     parser.add_argument('--api-version', type=str, default='v1', choices=['v1'],  help='Default to v1 if not specified')
     parser.add_argument('--document-type', type=str, default='Invoice', required=False, choices=['Invoice','DebitNote'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--format-id', type=str, default='SCI', required=False, choices=['SCI','IT', 'SA', 'RO'],  help='If not specified defaults to will be infered from file name..')
+    parser.add_argument('--source-system-id', type=str, metavar='<ERP defined in delta configurations>', required=False, help='if not specified defaults to "SystemERP"')
     parser.add_argument('--company-branch',  metavar='<Company branch>', type=str, required=False,  help='Used for KSA outbound documents.')
+    parser.add_argument('--use-romania-mock', action='store_true', help='Used for Romania outbound documents to simulate ANAF.')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
@@ -606,7 +519,9 @@ sample usage with all arguments:
   %(prog)s  --app-key 6D9Ux2J4KPaFfTPe9tGlIUfPwcZF7fVI
                  --app-secret kdeOJJPCiPsTWAGO 
                  --endpoint https://api-internal.sovos.com
+                 --source-system-id System-new-ERP
                  --company-branch 123456_BRANCH01
+                 --use-romania-mock
                  --keep-alive 
                  --polling-interval 30
                  --out-folder "C:\messages_to_cn\ou" 

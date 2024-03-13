@@ -55,7 +55,8 @@ def get_delta_coapi_token(service_url: str, app_key: str, app_secret: str) -> st
 # This function will receive the paylod and will dinamically generate the SBDH (WIP).. hopefully...
 def delta_send_document(service_url:str,
                      token: str,
-                     data: str) -> str:
+                     data: str,
+                     x_correlation_id = None) -> str:
     logger = logging.getLogger('delta_send_document')
     # convert data to base64
     data_in_base64 = base64.b64encode(data.encode('utf-8')).decode('utf-8')
@@ -65,6 +66,8 @@ def delta_send_document(service_url:str,
     }
     headers = {'content-type': 'application/json',
                'Authorization': 'Bearer ' + token}
+    if x_correlation_id is not None:
+        headers['x-correlationId'] = x_correlation_id
     
     logger.debug(json.dumps(headers, indent=4))
     logger.debug(json.dumps(request, indent=4))

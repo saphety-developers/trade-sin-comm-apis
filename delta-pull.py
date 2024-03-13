@@ -8,15 +8,19 @@ from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_pull
 from apis.cn_copai import get_cn_coapi_token
 from apis.delta_copai import delta_get_notifications, delta_acknowledged_notification
+from common.configuration_handling import command_line_arguments_to_delta_pull_configuration
+from common.console import console_config_settings, console_error, console_info
 from common.file_handling import *
+from common.string_handling import *
 from common.common import *
+from common.messages import Messages
 
 DEFAULT_IN_FOLDER_NAME = 'in'
 DEFAULT_LOG_FOLDER_NAME = 'log'
 DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'delta-pull'
 DEFAULT_PAGE_QUANTITY = 20
-COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA']
+COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA', 'RO']
 DEFAULT_SOURCE_SYSTEM_ID = 'SystemERP'
 logger: logging.Logger
 config: Configuration
@@ -38,6 +42,8 @@ def save_notification(notification):
     tax_id = notification["metadata"]["taxId"]    
 
     filename = f'{tax_id}_{erp_document_id}_{notification["notificationId"]}.xml'
+    filename = sanitize_filename(filename)
+
     filePathAndName = os.path.join(config.in_folder, filename)
 
     content_to_save = notification["content"]
@@ -46,13 +52,13 @@ def save_notification(notification):
     ba64decode = ba64decode.decode('utf-8')
     
     save_text_to_file(filePathAndName, ba64decode)
-    log_and_debug_message_value('notificationId:',notification["notificationId"])
-    log_and_debug_message_value('correlationId:',notification["correlationId"])
-    log_and_debug_message_value('processType:',notification["metadata"]["processType"])
-    log_and_debug_message_value('sciCloudStatusCode:',notification["metadata"]["sciCloudStatusCode"])
-    log_and_debug_message_value('productId:',notification["metadata"]["productId"])
-    log_and_debug_message_value('documentId:',notification["metadata"]["documentId"])
-    log_and_debug_message_value('Saved to:', filename)
+    console_log_message_value('notificationId:',notification["notificationId"])
+    console_log_message_value('correlationId:',notification["correlationId"])
+    console_log_message_value('processType:',notification["metadata"]["processType"])
+    console_log_message_value('sciCloudStatusCode:',notification["metadata"]["sciCloudStatusCode"])
+    console_log_message_value('productId:',notification["metadata"]["productId"])
+    console_log_message_value('documentId:',notification["metadata"]["documentId"])
+    console_log_message_value('Saved to:', filename)
 
 
     if config.save_in_history:
@@ -78,9 +84,8 @@ def save_notification(notification):
 def pull_messages(token:str, country_code, tax_id):
     logger = logging.getLogger('pull_messages')
 
-    # TODO query parameters must be url setedas config variables
-    service_url = config.endpoint + '/' + config.api_version + '/notifications'
-    log_and_debug_message_value('Pulling notifications:', f'{country_code}{tax_id}:{config.source_system_id}')
+    service_url = f'{config.endpoint}/{config.api_version}/notifications'
+    console_log_message_value(Messages.POOLING_NOTIFICATIONS.value, f'{country_code}:{tax_id}:{config.source_system_id}')
     result = delta_get_notifications(service_url=service_url,
                                         token=token,
                                         country_code=country_code,
@@ -89,13 +94,12 @@ def pull_messages(token:str, country_code, tax_id):
                                         page_size=DEFAULT_PAGE_QUANTITY)
     logger.debug(json.dumps(result, indent=4))
     if "errors" in result:
-        console_and_log_error_message(f'Error pulling notifications for {country_code}{tax_id}:{config.source_system_id}')
-        #iterate over errors
+        console_and_log_error_message(f'{Messages.ERROR_PULLING_NOTIFICATIONS.value} {country_code}:{tax_id}:{config.source_system_id}')
         for idx, error in enumerate(result["errors"]):
             console_and_log_error_message(f'Error: {error["message"]}')
         return
     if "error" in result:
-        console_and_log_error_message(f'Error pulling notifications for {country_code}{tax_id}:{config.source_system_id}')
+        console_and_log_error_message(f'{Messages.ERROR_PULLING_NOTIFICATIONS.value} {country_code}{tax_id}:{config.source_system_id}')
         print(json.dumps(result, indent=4))
         return
     #print(json.dumps(result, indent=4))
@@ -103,7 +107,7 @@ def pull_messages(token:str, country_code, tax_id):
     if "data" in result:
         has_notifications_to_save = result["data"]["notifications"] is not None and len(result["data"]["notifications"]) > 0
         if not has_notifications_to_save:
-                log_console_and_log_debug('No notifications to pull...')
+                log_console_and_log_debug(Messages.NO_NOTIFICATIONS_TO_PULL.value)
                 return
 
         if has_notifications_to_save:
@@ -121,20 +125,25 @@ def pull_messages(token:str, country_code, tax_id):
 # pull_messges_interval
 #
 def pull_messges_interval(token):
-    number_of_poolings = 0
+    poolings_with_this_token = 0
     try:
         while True:
-            if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
+            if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
+                console_log_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-                log_and_debug_message_value('Requested new auth token:', token)
-            for tax_id in config.tax_ids_to_pull_notifications:
-                for country_code in config.countries_to_pull_notifications:
-                    pull_messages(token, country_code, tax_id)
-                number_of_poolings+=1
+                poolings_with_this_token = 0
+            if token:
+                for tax_id in config.tax_ids_to_pull_notifications:
+                    for country_code in config.countries_to_pull_notifications:
+                        pull_messages(token, country_code, tax_id)
+                poolings_with_this_token += 1
                 wait_console_indicator(config.polling_interval)
                 #time.sleep(config.polling_interval)  # wait for x sec
+            else:
+                log_could_not_get_token()
+                break
     except KeyboardInterrupt:
-        console_and_log_error_message("Exiting program by user interrupt...")
+        console_and_log_error_message(Messages.EXIT_BY_USER_REQUEST.value)
 
 def set_in_folder():
     in_dir = os.path.join(os.getcwd(), 'in')
@@ -166,25 +175,22 @@ if config.tax_ids_to_pull_notifications is None or len(config.tax_ids_to_pull_no
 
 
 if not is_valid_url(config.endpoint):
-    log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
+    console_log_message_value(Messages.INVALID_ENDPOINT_PROVIDED.value, config.endpoint, MessageType.ERROR)
     sys.exit(0)
 
 set_logging()
-
-log_app_delta_pull_starting(config)
-#print (config)
+#log_app_delta_pull_starting(config)
+console_config_settings(config)
 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-# Do we have a token? If so we can proceed
 if token:
-    logging.debug('Authentication token: %s', token)
     create_folder_if_no_exists(config.in_folder)
     if config.in_history:
         create_folder_if_no_exists(config.in_history)
     if config.keep_alive:
-        print ('Keep alive mode is on. Press cmd+c or ctrl+c to exit...')
+        console_info (Messages.KEEP_ALIVE_IS_ON.value)
         pull_messges_interval(token)
     else:
         pull_messages(token)
 else:
-    log_could_not_get_token()
+    console_error(Messages.CAN_NOT_GET_TOKEN.value)
 log_app_ending(APP_NAME)

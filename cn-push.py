@@ -26,13 +26,6 @@ def set_logging():
     create_folder_if_no_exists(config.log_folder)
     log_file_path=get_log_file_path(APP_NAME, config.log_folder)
     configure_logging(log_file_path, config.log_level)
-
-# a function receives a string and an array of strings. returns the string that existe in the array and also must be contained in the string
-def get_string_from_array_of_strings(string_to_search_within: str, array_of_strings: list) -> str:
-    for s in array_of_strings:
-        if s in string_to_search_within:
-            return s
-    return None
 ##
 # push_message
 ##

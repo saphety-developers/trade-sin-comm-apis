@@ -3,6 +3,12 @@ import datetime
 import os
 import shutil
 import time
+import re
+
+def sanitize_filename(filename):
+    # Replace invalid characters with underscores
+    sanitized_filename = re.sub(r'[\/:*?"<>|]', '_', filename)
+    return sanitized_filename
 
 def create_folder_if_no_exists(folder_path):
     if not os.path.exists(folder_path):

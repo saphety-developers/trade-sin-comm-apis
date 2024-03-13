@@ -64,6 +64,27 @@
         ],
         "console": "integratedTerminal",
         "justMyCode": true
+      },
+      {
+        "name": "Push to Delta QA - RO33333333 - SCI",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "delta-push.py",
+        "args": [
+          "--app-key=tDYdcwqXkouPuybFYtamsM37huHNUGKk",
+          "--app-secret=MVwKsaGE4VmN2F7X",
+          "--keep-alive",
+          "--endpoint=delta-qa",
+          "--log-level=debug",
+          "--save-out-history",
+          "--polling-interval=20",
+          "--out-folder=C:\\tmp\\messaging-test\\RO33333333\\out",
+          "--out-folder-history=C:\\tmp\\messaging-test\\RO33333333\\history\\out",
+          "--log-folder=C:\\tmp\\messaging-test\\RO33333333\\log",
+          "--use-romania-mock"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
       }
     ]
   }

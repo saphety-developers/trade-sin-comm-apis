@@ -1,5 +1,7 @@
 class Configuration:
-    def __init__(self, log_level='info',
+    def __init__(self, 
+                 app_name = None,
+                 log_level='info',
                  keep_alive=False,
                  user='',
                  password='',
@@ -9,6 +11,7 @@ class Configuration:
                  source_system_id=None,
                  tax_ids_to_pull_notifications=None,
                  company_branch=None,
+                 use_romania_mock=False,
                  out_folder='',
                  header_x_operational_endpoint_partner_id=None,
                  in_folder='',
@@ -31,6 +34,7 @@ class Configuration:
                  acknowledge_notifications = True,
                  log_folder=''):
         self.log_level = log_level
+        self.app_name = app_name
         self.keep_alive = keep_alive
         self.user = user
         self.password = password
@@ -64,6 +68,7 @@ class Configuration:
     def __str__(self):
         return (
         f"Configuration(log_level={self.log_level}, "
+        f"app_name='{self.app_name}',"
         f"keep_alive={self.keep_alive}, "
         f"user='{self.user}', "
         f"password='{self.password}', "
@@ -72,6 +77,7 @@ class Configuration:
         f"countries_to_pull_notifications='{self.countries_to_pull_notifications}', "
         f"tax_ids_to_pull_notifications='{self.tax_ids_to_pull_notifications}', "
         f"company_branch='{self.company_branch}', "
+        f"use_romania_mock='{self.use_romania_mock}', "
         f"source_system_id='{self.source_system_id}', "
         f"print_app_name='{self.print_app_name}', "
         f"save_out_history='{self.save_out_history}', "
