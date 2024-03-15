@@ -1,38 +1,22 @@
 import json
-import getpass
 import logging
 import os
 import sys
-import time
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_pull
 from apis.cn_copai import get_cn_coapi_token
 from apis.delta_copai import delta_get_notifications, delta_acknowledged_notification
-from common.configuration_handling import command_line_arguments_to_delta_pull_configuration
-from common.console import console_config_settings, console_error, console_info
+from common.configuration_handling import command_line_arguments_to_delta_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_delta_notification, console_error, console_info
 from common.file_handling import *
 from common.string_handling import *
 from common.common import *
 from common.messages import Messages
 
-DEFAULT_IN_FOLDER_NAME = 'in'
-DEFAULT_LOG_FOLDER_NAME = 'log'
-DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'delta-pull'
 DEFAULT_PAGE_QUANTITY = 20
-COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA', 'RO']
-DEFAULT_SOURCE_SYSTEM_ID = 'SystemERP'
 logger: logging.Logger
 config: Configuration
-
-def set_logging():
-    create_folder_if_no_exists(config.log_folder)
-    log_file_path=get_log_file_path(APP_NAME, config.log_folder)
-    configure_logging(log_file_path, config.log_level)
-
-def acknowledge_notification(notification_id):
-    print (f' Acknowledging notificationId: {notification_id}...')
-    return None
 
 def save_notification(notification):
     logger = logging.getLogger('save_notification')
@@ -52,12 +36,7 @@ def save_notification(notification):
     ba64decode = ba64decode.decode('utf-8')
     
     save_text_to_file(filePathAndName, ba64decode)
-    console_log_message_value('notificationId:',notification["notificationId"])
-    console_log_message_value('correlationId:',notification["correlationId"])
-    console_log_message_value('processType:',notification["metadata"]["processType"])
-    console_log_message_value('sciCloudStatusCode:',notification["metadata"]["sciCloudStatusCode"])
-    console_log_message_value('productId:',notification["metadata"]["productId"])
-    console_log_message_value('documentId:',notification["metadata"]["documentId"])
+    console_delta_notification(notification)
     console_log_message_value('Saved to:', filename)
 
 
@@ -153,32 +132,17 @@ def set_in_folder():
 # Main - Application starts here
 ##
 args = parse_args_for_delta_pull()
-config = command_line_arguments_to_delta_pull_configuration(args)
+config = command_line_arguments_to_delta_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_delta_pull()
-if not config.app_secret:
-    config.app_secret = getpass.getpass("App secret: ")
-if not config.in_folder:
-    config.in_folder = os.path.join(os.getcwd(), config.app_key, DEFAULT_IN_FOLDER_NAME)
-if not config.in_history:
-    config.in_history = os.path.join(os.getcwd(), config.app_key, DEFAULT_IN_FOLDER_HISTORY_NAME)
-if not config.log_folder:
-    config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
-if config.countries_to_pull_notifications is None or len(config.countries_to_pull_notifications) == 0:
-    config.countries_to_pull_notifications = COUNTRY_CODES_TO_PULL_FROM
-if config.source_system_id is None or len(config.source_system_id) == 0:
-    config.source_system_id = DEFAULT_SOURCE_SYSTEM_ID
+
+config = set_config_defaults(config)
 if config.tax_ids_to_pull_notifications is None or len(config.tax_ids_to_pull_notifications) == 0:
-    log_console_message('No tax ids to pull notifications from. Use option --tax-ids 78987311221 . Exiting...')
-    sys.exit(0)
+      console_error('No tax ids to pull notifications from. Use option --tax-ids 78987311221 . Exiting...')
+      sys.exit(0)
 
-
-if not is_valid_url(config.endpoint):
-    console_log_message_value(Messages.INVALID_ENDPOINT_PROVIDED.value, config.endpoint, MessageType.ERROR)
-    sys.exit(0)
-
-set_logging()
+set_logging(APP_NAME, config)
 #log_app_delta_pull_starting(config)
 console_config_settings(config)
 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)

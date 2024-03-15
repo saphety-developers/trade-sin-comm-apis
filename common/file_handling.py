@@ -211,3 +211,42 @@ def get_log_file_path(app_name: str, log_dir) -> str:
     log_file_name_for_day = f'{date_str}-' + app_name + '.log'
     log_file_name = os.path.join(log_dir, log_file_name_for_day)
     return log_file_name
+
+def remove_file_extension(file_name):
+    """
+    Removes the file extension from the given file name.
+    
+    Args:
+        file_name (str): The name of the file.
+    
+    Returns:
+        str: The filename without the extension.
+    """
+    # Find the last occurrence of '.' in the file name
+    last_dot_index = file_name.rfind('.')
+    
+    # If a '.' is found and it's not the first character, return the substring before the last dot
+    if last_dot_index != -1 and last_dot_index > 0:
+        return file_name[:last_dot_index]
+    else:
+        # If no '.' is found or it's the first character, return the original file name
+        return file_name
+def get_file_extension(file_name):
+    """
+    Extracts the file extension from the given file name.
+    
+    Args:
+        file_name (str): The name of the file.
+    
+    Returns:
+        str: The file extension including the dot.
+    """
+    # Find the last occurrence of '.' in the file name
+    last_dot_index = file_name.rfind('.')
+    
+    # If a '.' is found and it's not the last character, return the substring starting from the last dot
+    if last_dot_index != -1 and last_dot_index != len(file_name) - 1:
+        return file_name[last_dot_index:]
+    else:
+        # If no '.' is found or it's the last character, return an empty string
+        return ""

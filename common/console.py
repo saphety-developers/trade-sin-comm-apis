@@ -110,3 +110,13 @@ def console_config_settings(config: Configuration):
     if (config.in_history):
         console_log_message_value(Messages.SAVING_HISTORY_TO.value, config.in_history)
     console_log_message_value(Messages.LOGGING_SET_TO.value,config.log_folder)
+
+def console_delta_notification (notification):
+    console_log_message_value(Messages.NOTIFICATION_ID.value, notification["notificationId"])
+    console_log_message_value(Messages.NOTIFICATION_TYPE.value, notification["notificationType"])
+    console_log_message_value(Messages.NOTIFICATION_DATE.value, notification["notificationDate"])
+    console_log_message_value(Messages.NOTIFICATION_SOURCE.value, notification["sourceSystemId"])
+    console_log_message_value(Messages.NOTIFICATION_COUNTRY.value, notification["countryCode"])
+    console_log_message_value(Messages.NOTIFICATION_TAX_ID.value, notification["taxId"])
+    console_log_message_value(Messages.NOTIFICATION_FORMAT_ID.value, notification["formatId"])
+    console_log_message_value(Messages.NOTIFICATION_MESSAGE.value, notification["message"])

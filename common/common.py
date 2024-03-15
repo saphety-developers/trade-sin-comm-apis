@@ -8,13 +8,20 @@ import sys
 import time
 from urllib.parse import urlparse
 from common.configuration import Configuration, Configuration3
-from common.console import console_log_message_value 
+from common.console import console_log_message_value
+from common.file_handling import create_folder_if_no_exists, get_log_file_path 
 from common.messages import MessageType
 import csv
 from io import StringIO
 import keyboard
 from common.messages import Messages
 
+
+def set_logging(app_name, config: Configuration):
+    create_folder_if_no_exists(config.log_folder)
+    log_file_path=get_log_file_path(app_name, config.log_folder)
+    configure_logging(log_file_path, config.log_level)
+    
 def seconds_to_human_readable(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
