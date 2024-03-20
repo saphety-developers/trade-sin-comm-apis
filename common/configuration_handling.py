@@ -5,7 +5,7 @@ import sys
 from common.common import is_valid_url
 from common.configuration import Configuration
 from common.api_endpoints import APIEndpoints
-from common.console import console_error, console_log_message_value
+from common.console import console_error, console_message_value
 from common.messages import MessageType, Messages
 
 DEFAULT_SOURCE_SYSTEM_ID = 'SystemERP'
@@ -17,7 +17,7 @@ DEFAULT_OUT_FOLDER_HISTORY_NAME = 'out_history'
 COUNTRY_CODES_TO_PULL_FROM = ['IT', 'SA', 'RO']
 DEFAULT_POLLING_INTERVAL_SECONDS = 30 # seconds
 
-def command_line_arguments_to_delta_api_configuration(args: Namespace) -> Configuration:
+def command_line_arguments_to_api_configuration(args: Namespace) -> Configuration:
   config = Configuration()
   config.app_key = args.app_key
   config.app_secret = args.app_secret
@@ -57,8 +57,18 @@ def command_line_arguments_to_delta_api_configuration(args: Namespace) -> Config
     config.tax_ids_to_pull_notifications = args.tax_ids
   if hasattr(args, 'source_system_id'):
     config.source_system_id = args.source_system_id
+  if hasattr(args, 'include_read'):
+    config.include_read = args.include_read
+    if hasattr(args, 'start_date'):
+      config.start_date = args.start_date
+  if hasattr(args, 'destination_entity_code'):
+    config.destination_entity_code = args.destination_entity_code   
+  if hasattr(args, 'end_date'):
+    config.end_date = args.end_date
   if hasattr(args, 'in_folder_history'):
     config.in_history = args.in_folder_history
+  if hasattr(args, 'header_x_operational_endpoint_partner_id'):
+    config.header_x_operational_endpoint_partner_id = args.header_x_operational_endpoint_partner_id
     
   config.log_folder = args.log_folder
   config.print_app_name = args.no_app_name
@@ -84,6 +94,6 @@ def set_config_defaults(config: Configuration):
         if not config.polling_interval:
             config.polling_interval =  DEFAULT_POLLING_INTERVAL_SECONDS
     if not is_valid_url(config.endpoint):
-        console_log_message_value(Messages.INVALID_ENDPOINT_PROVIDED.value, config.endpoint, MessageType.ERROR)
+        console_message_value(Messages.INVALID_ENDPOINT_PROVIDED.value, config.endpoint, MessageType.ERROR)
         sys.exit(0)
     return config

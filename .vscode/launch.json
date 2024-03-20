@@ -66,22 +66,21 @@
         "justMyCode": true
       },
       {
-        "name": "Push to Delta QA - RO33333333 - SCI",
+        "name": "Push to CN QA - IT03386690170 - Legal",
         "type": "debugpy",
         "request": "launch",
-        "program": "delta-push.py",
+        "program": "cn-push.py",
         "args": [
-          "--app-key=tDYdcwqXkouPuybFYtamsM37huHNUGKk",
-          "--app-secret=MVwKsaGE4VmN2F7X",
-          "--keep-alive",
-          "--endpoint=delta-qa",
+          "--app-key=3P9Fx2J4RPmFfJPe9tGlIUkUwcZF7eIX",
+          "--app-secret=jbdNUUADmNfRCMAt",
+          "--endpoint=cn-dev",
           "--log-level=debug",
           "--save-out-history",
           "--polling-interval=20",
-          "--out-folder=C:\\tmp\\messaging-test\\RO33333333\\out",
-          "--out-folder-history=C:\\tmp\\messaging-test\\RO33333333\\history\\out",
-          "--log-folder=C:\\tmp\\messaging-test\\RO33333333\\log",
-          "--use-romania-mock"
+          "--out-folder=C:\\tmp\\messaging-test\\IT03386690170\\out",
+          "--out-folder-history=C:\\tmp\\messaging-test\\IT03386690170\\history\\out",
+          "--log-folder=C:\\tmp\\messaging-test\\IT03386690170\\log"
+
         ],
         "console": "integratedTerminal",
         "justMyCode": true

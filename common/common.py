@@ -8,7 +8,7 @@ import sys
 import time
 from urllib.parse import urlparse
 from common.configuration import Configuration, Configuration3
-from common.console import console_log_message_value
+from common.console import console_message_value
 from common.file_handling import create_folder_if_no_exists, get_log_file_path 
 from common.messages import MessageType
 import csv
@@ -21,46 +21,7 @@ def set_logging(app_name, config: Configuration):
     create_folder_if_no_exists(config.log_folder)
     log_file_path=get_log_file_path(app_name, config.log_folder)
     configure_logging(log_file_path, config.log_level)
-    
-def seconds_to_human_readable(seconds):
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
 
-    time_components = []
-
-    if hours > 0:
-        time_components.append(f"{hours} {'hour' if hours == 1 else 'hours'}")
-    if minutes > 0:
-        time_components.append(f"{minutes} {'minute' if minutes == 1 else 'minutes'}")
-    if seconds > 0 or not time_components:
-        time_components.append(f"{seconds} {'second' if seconds == 1 else 'seconds'}")
-
-    return ', '.join(time_components)
-
-def wait_console_indicator(interval):
-  remaining_time = interval
-  while remaining_time > 0:
-    if keyboard.is_pressed('enter') or keyboard.is_pressed('space'):
-      print(" " * 64, end='\r')
-      break
-
-    underscores = '_' * remaining_time
-    yellow = "\033[33m"
-    reset = "\033[0m"
-    bg_red = "\033[41m"
-    n = 3 - len(str(remaining_time))
-    spaces = " " * n
-
-    progress_text = f"{yellow}{underscores}{reset}"
-    counter_text = f"{bg_red} {str(remaining_time)}{spaces}{reset}"
-    #only display progress in last minute
-    if remaining_time < 60:
-      print (f"{progress_text}{counter_text}", end='\r')
-    else:
-      counter_readable = seconds_to_human_readable(remaining_time)
-      print (counter_readable, end='\r')
-    time.sleep(1)
-    remaining_time -= 1
 
 
 def command_line_arguments_to_configuration2(args: Namespace) -> Configuration:
@@ -605,8 +566,8 @@ def parse_args_for_trade_pull():
     parser = argparse.ArgumentParser(description='Trade messaging api client - pull messages from network')
 
     # Add the arguments to the parser
-    parser.add_argument('--user', type=str, metavar='<user>', required=True, help='Trade partner Id')
-    parser.add_argument('--passwd', type=str, metavar='<passwd>', required=False, help='Password for queue comms on Trade')
+    parser.add_argument('--app-key', type=str, metavar='<user>', required=True, help='Trade partner Id')
+    parser.add_argument('--app-secret', type=str, metavar='<passwd>', required=False, help='Password for queue comms on Trade')
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='Trade endpoint to push messages to. Use alias for known environments: "int", "qa", "prd" or specify a custom endpoint...')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds betwwen pollings. Defaults to 480 (8 min.)')
@@ -621,7 +582,7 @@ def parse_args_for_trade_pull():
     parser.usage = """\n %(prog)s --user <PartnerId> --endpoint {int, qa, prd, <url>}  [--passwd <Partner queue psswd>][other optinons]
 
 sample usage: 
-  %(prog)s  --user PT500111111 --passwd PT500111111 --keep-alive --endpoint int
+  %(prog)s  --app-key PT500111111 --app-secret PT500111111 --keep-alive --endpoint int
 
 sample usage with all arguments: 
   %(prog)s  --user PT500111111
@@ -635,7 +596,7 @@ sample usage with all arguments:
                  --log-level info 
                  --log-folder "C:\messages\logs"
                  --no-app-name
-*Avoid password as command line argument. It will be prompted securely if not specified.
+*Avoid password/app secret as command line argument. It will be prompted securely if not specified.
  
  
 """

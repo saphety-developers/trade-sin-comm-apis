@@ -6,8 +6,8 @@ from common.configuration import Configuration
 from common.ascii_art import ascii_art_delta_pull
 from apis.cn_copai import get_cn_coapi_token
 from apis.delta_copai import delta_get_notifications, delta_acknowledged_notification
-from common.configuration_handling import command_line_arguments_to_delta_api_configuration, set_config_defaults
-from common.console import console_config_settings, console_delta_notification, console_error, console_info
+from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_delta_notification, console_error, console_info, console_wait_indicator
 from common.file_handling import *
 from common.string_handling import *
 from common.common import *
@@ -37,7 +37,7 @@ def save_notification(notification):
     
     save_text_to_file(filePathAndName, ba64decode)
     console_delta_notification(notification)
-    console_log_message_value('Saved to:', filename)
+    console_message_value('Saved to:', filename)
 
 
     if config.save_in_history:
@@ -64,7 +64,7 @@ def pull_messages(token:str, country_code, tax_id):
     logger = logging.getLogger('pull_messages')
 
     service_url = f'{config.endpoint}/{config.api_version}/notifications'
-    console_log_message_value(Messages.POOLING_NOTIFICATIONS.value, f'{country_code}:{tax_id}:{config.source_system_id}')
+    console_message_value(Messages.POOLING_NOTIFICATIONS.value, f'{country_code}:{tax_id}:{config.source_system_id}')
     result = delta_get_notifications(service_url=service_url,
                                         token=token,
                                         country_code=country_code,
@@ -108,7 +108,7 @@ def pull_messges_interval(token):
     try:
         while True:
             if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
-                console_log_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
+                console_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
                 poolings_with_this_token = 0
             if token:
@@ -116,7 +116,7 @@ def pull_messges_interval(token):
                     for country_code in config.countries_to_pull_notifications:
                         pull_messages(token, country_code, tax_id)
                 poolings_with_this_token += 1
-                wait_console_indicator(config.polling_interval)
+                console_wait_indicator(config.polling_interval)
                 #time.sleep(config.polling_interval)  # wait for x sec
             else:
                 log_could_not_get_token()
@@ -132,7 +132,7 @@ def set_in_folder():
 # Main - Application starts here
 ##
 args = parse_args_for_delta_pull()
-config = command_line_arguments_to_delta_api_configuration(args)
+config = command_line_arguments_to_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_delta_pull()
@@ -143,7 +143,7 @@ if config.tax_ids_to_pull_notifications is None or len(config.tax_ids_to_pull_no
       sys.exit(0)
 
 set_logging(APP_NAME, config)
-#log_app_delta_pull_starting(config)
+
 console_config_settings(config)
 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
 if token:

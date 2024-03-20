@@ -1,7 +1,7 @@
 import logging, os, json, uuid
 import xml.etree.ElementTree as ET
-from common.configuration_handling import command_line_arguments_to_delta_api_configuration, set_config_defaults
-from common.console import console_config_settings, console_error, console_info, console_log
+from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_wait_indicator
 from common.messages import Messages
 from common.string_handling import anonymize_string, base64_to_xml
 from common.xml.sbdh import StandardBusinessDocumentHeader
@@ -19,27 +19,30 @@ logger: logging.Logger
 config: Configuration
 
 def after_call_service (result, file_path, history_folder_for_file):
+    logger = logging.getLogger('after_call_service')
     filename = os.path.basename(file_path)
     if "errors" in result and result["errors"]:
-        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
+        console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
         for error in result["errors"]:
             console_and_log_error_message(f"Error: {error['message']}")
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
         return False
     if "error" in result:
-        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
+        console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
     if "success" in result and result["success"] == True:
-        console_log_message_value('File upload success:',filename)
-        console_log_message_value('Received transactionId:', result["data"]["transactionId"])
+        console_message_value(Messages.FILE_UPLOADED_SUCESS.value,filename)
+        console_message_value(Messages.RECEIVED_TRANSACTION_ID.value, result["data"]["transactionId"])
         if config.save_out_history:
+            history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
+            create_folder_if_no_exists(history_folder_for_file)
             move_file(src_path=file_path, dst_folder = history_folder_for_file)
         else:
-            delete_file(file_path)  
+            delete_file(file_path) 
     else:
-        console_and_log_error_message(f'Error uploading file {filename} see server response log for details.')
+        console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
         print(json.dumps(result, indent=4))
         logger.error(json.dumps(result, indent=4))
 
@@ -53,7 +56,7 @@ def push_message(file_path: str, token: str) -> bool:
     file_name_without_extension = remove_file_extension(filename)
     file_extension = get_file_extension(filename)
 
-    console_log_message_value(Messages.UPLOADING_FILE.value, filename)
+    console_message_value(Messages.UPLOADING_FILE.value, filename)
 
     base64_contents = read_file_to_base64(file_path)
     if base64_contents is None:
@@ -114,13 +117,13 @@ def push_messges_interval(token):
     try:
         while True:
             if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
-                console_log_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
+                console_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
                 token =  get_cn_coapi_token (f'{config.endpoint}/oauth/token', config.app_key, config.app_secret)
                 poolings_with_this_token = 0
             if token:
                 push_messages(token)
                 poolings_with_this_token += 1
-                wait_console_indicator(config.polling_interval)
+                console_wait_indicator(config.polling_interval)
             else:
                 log_could_not_get_token()
                 break
@@ -132,7 +135,7 @@ def push_messges_interval(token):
 # Main - Application starts here
 ##
 args = parse_args_for_delta_push()
-config = command_line_arguments_to_delta_api_configuration(args)
+config = command_line_arguments_to_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_delta_push()

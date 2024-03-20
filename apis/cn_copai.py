@@ -4,6 +4,8 @@ import requests
 import base64
 import uuid
 
+from common.console import console_error
+
 def get_cn_coapi_token(service_url: str, app_key: str, app_secret: str) -> str:
     logger = logging.getLogger('get_cn_copai_token')
     try:
@@ -71,11 +73,14 @@ def cn_send_document(service_url:str,
                'x-correlationId': x_correlationId,
                'x-originSystemId': x_originSystemId}
     
-    #print(json.dumps(headers, indent=4))
-    #print(json.dumps(request, indent=4))
+    print(json.dumps(headers, indent=4))
+    print(json.dumps(request, indent=4))
     response = requests.request("POST", service_url, data=request_data, headers=headers)
-    return response.json()
-    #print(json.dumps(json_response, indent=4))
+    if response.status_code != 200:
+        console_error(f'Error sending document: {response.status_code} {response.reason} {response.text}')
+        return None
+    if response.status_code == 200:
+        return response.json()
 
 def cn_get_notifications(service_url: str, token: str, wait_timeout: int, prefetch_quantity: int) -> str:
     logger = logging.getLogger('cn_get_notifications')

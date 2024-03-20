@@ -1,8 +1,13 @@
 # Print message and value in columns for better readability in console
 import datetime
 import logging
+import os
+import time
+
+import keyboard
 from common.configuration import Configuration
 from common.messages import MessageType, Messages
+from common.string_handling import seconds_to_human_readable
 
 def _get_formatted_time_for_log ():
     current_time = datetime.datetime.now()
@@ -41,7 +46,7 @@ def console_error_message_value(message, value):
     logging.debug(f'{message} {value}')
 
 # console_log_message includes printing the time stamp
-def console_log_message_value(message, value, message_type = MessageType.DEFAULT):
+def console_message_value(message, value, message_type = MessageType.DEFAULT):
     _log_message_value(message, value, message_type)
     logging.debug(f'{message} {value}')
 
@@ -87,36 +92,61 @@ def console_log_warning(message):
 def console_config_settings(config: Configuration):
     # out and keep alive
     if config.out_folder and config.keep_alive:
-        console_log_message_value(Messages.LISTENING_FILES_AT.value, f"{config.out_folder} every {config.polling_interval} seconds")
+        console_message_value(Messages.LISTENING_FILES_AT.value, f"{os.path.normpath(config.out_folder)} every {config.polling_interval} seconds")
     # if no keep alive
     if config.out_folder and not config.keep_alive:
-        console_log_message_value(Messages.LISTENING_FILES_AT.value, f"{config.out_folder} just once")
+        console_message_value(Messages.LISTENING_FILES_AT.value, f"{os.path.normpath(config.out_folder)} just once")
     # if endpoint and to out_folder -> we are pushing files
     if config.endpoint and config.out_folder:
-        console_log_message_value(Messages.PUSHING_FILES_TO.value,config.endpoint)
+        console_message_value(Messages.PUSHING_FILES_TO.value,config.endpoint)
     # listening notifications
     if config.in_folder and config.keep_alive:
-        console_log_message_value(Messages.LISTENING_NOTIFICATIONS_AT.value, f"{config.endpoint} every {config.polling_interval} seconds")
+        console_message_value(Messages.LISTENING_NOTIFICATIONS_AT.value, f"{config.endpoint} every {config.polling_interval} seconds")
     # if no keep alive
     if config.in_folder and not config.keep_alive:
-        console_log_message_value(Messages.LISTENING_NOTIFICATIONS_AT.value, f"{config.endpoint} just once")
+        console_message_value(Messages.LISTENING_NOTIFICATIONS_AT.value, f"{config.endpoint} just once")
     # save incomming messages
     if config.in_folder:
-        console_log_message_value(Messages.SAVING_INCOMMING_MESSAGES_TO.value, config.in_folder)
+        console_message_value(Messages.SAVING_INCOMMING_MESSAGES_TO.value, os.path.normpath(config.in_folder))
     # save out history
     if (config.save_out_history):
-        console_log_message_value(Messages.SAVING_HISTORY_TO.value, config.out_folder_history)
+        console_message_value(Messages.SAVING_HISTORY_TO.value, os.path.normpath(config.out_folder_history))
     #save in history
     if (config.in_history):
-        console_log_message_value(Messages.SAVING_HISTORY_TO.value, config.in_history)
-    console_log_message_value(Messages.LOGGING_SET_TO.value,config.log_folder)
+        console_message_value(Messages.SAVING_HISTORY_TO.value, os.path.normpath(config.in_history))
+    console_message_value(Messages.LOGGING_SET_TO.value, os.path.normpath(config.log_folder))
 
 def console_delta_notification (notification):
-    console_log_message_value(Messages.NOTIFICATION_ID.value, notification["notificationId"])
-    console_log_message_value(Messages.NOTIFICATION_TYPE.value, notification["notificationType"])
-    console_log_message_value(Messages.NOTIFICATION_DATE.value, notification["notificationDate"])
-    console_log_message_value(Messages.NOTIFICATION_SOURCE.value, notification["sourceSystemId"])
-    console_log_message_value(Messages.NOTIFICATION_COUNTRY.value, notification["countryCode"])
-    console_log_message_value(Messages.NOTIFICATION_TAX_ID.value, notification["taxId"])
-    console_log_message_value(Messages.NOTIFICATION_FORMAT_ID.value, notification["formatId"])
-    console_log_message_value(Messages.NOTIFICATION_MESSAGE.value, notification["message"])
+    console_message_value(Messages.ID.value, notification["notificationId"])
+    console_message_value(Messages.TYPE.value, notification["metadata"]["processType"])
+    console_message_value(Messages.DATE.value, notification["metadata"]["productId"])
+    console_message_value(Messages.SOURCE.value, notification["metadata"]["erpDocumentId"])
+    #console_message_value(Messages.COUNTRY.value, notification["metadata"]["productId"])
+    console_message_value(Messages.TAX_ID.value, notification["metadata"]["taxId"])
+    #console_message_value(Messages.FORMAT_ID.value, notification["metadata"]["formatId"])
+    #console_message_value(Messages.MESSAGE.value, notification["message"])
+
+def console_wait_indicator(interval):
+  remaining_time = interval
+  while remaining_time > 0:
+    if keyboard.is_pressed('enter') or keyboard.is_pressed('space'):
+      print(" " * 64, end='\r')
+      break
+
+    underscores = '_' * remaining_time
+    yellow = "\033[33m"
+    reset = "\033[0m"
+    bg_red = "\033[41m"
+    n = 3 - len(str(remaining_time))
+    spaces = " " * n
+
+    progress_text = f"{yellow}{underscores}{reset}"
+    counter_text = f"{bg_red} {str(remaining_time)}{spaces}{reset}"
+    #only display progress in last minute
+    if remaining_time < 60:
+      print (f"{progress_text}{counter_text}", end='\r')
+    else:
+      counter_readable = seconds_to_human_readable(remaining_time)
+      print (counter_readable, end='\r')
+    time.sleep(1)
+    remaining_time -= 1

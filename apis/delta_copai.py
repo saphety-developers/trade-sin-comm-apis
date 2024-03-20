@@ -77,6 +77,7 @@ def delta_send_document(service_url:str,
     response = requests.request("POST", service_url, data=request_data, headers=headers)
     #print(json.dumps(response, indent=4))
     logger.debug(json.dumps(response.json(), indent=4))
+    # TODO: need to test if response is 200 before serializing json - it may fail
     return response.json()
 
 

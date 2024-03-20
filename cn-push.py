@@ -1,42 +1,64 @@
-import getpass
 import logging
 import os
-import sys
-import time
 import json
 import uuid
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_cn_push
 from apis.cn_copai import get_cn_coapi_token, cn_send_document
+from common.configuration_handling import set_config_defaults
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_wait_indicator
 from common.file_handling import *
 from common.common import *
+from common.string_handling import anonymize_string, get_string_from_array_of_strings
 
-DEFAULT_OUT_FOLDER_NAME = 'out'
-DEFAULT_LOG_FOLDER_NAME = 'log'
-DEFAULT_OUT_FOLDER_HISTORY_NAME = 'out_history'
-DEFAULT_POLLING_INTERVAL_SECONDS = 30 # seconds
 APP_NAME = 'cn-push'
 # defne a constant that is an array of strings.
 AVAILABLE_FORMAT_IDS = ['FR-UBL-1.0','IT-SCI-1.0','IT-FatturaPa-1.0','SA-SCI-1.0','SA-UBL-1.0','RO-SCI-1.0']
 AVAILABLE_DOC_TYPES = ['Invoice','DebitNote','CreditNote']
 logger: logging.Logger
-config: Configuration
 
-def set_logging():
-    create_folder_if_no_exists(config.log_folder)
-    log_file_path=get_log_file_path(APP_NAME, config.log_folder)
-    configure_logging(log_file_path, config.log_level)
+config: Configuration
+def after_call_service (result, file_path):
+    logger = logging.getLogger('after_call_service')
+    filename = os.path.basename(file_path)
+    if result is not None:
+        if "errors" in result and result["errors"]:
+            console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
+            for error in result["errors"]:
+                console_and_log_error_message(f"Error: {error['message']}")
+            print(json.dumps(result, indent=4))
+            logger.error(json.dumps(result, indent=4))
+            return False
+        if "success" in result and result["success"] == True:
+            console_message_value(Messages.FILE_UPLOADED_SUCESS.value,filename)
+            console_message_value(Messages.RECEIVED_TRANSACTION_ID.value, result["data"]["transactionId"])
+            if config.save_out_history:
+                history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
+                create_folder_if_no_exists(history_folder_for_file)
+                move_file(src_path=file_path, dst_folder = history_folder_for_file)
+            else:
+                delete_file(file_path)  
+        else:
+            console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
+            print(json.dumps(result, indent=4))
+            logger.error(json.dumps(result, indent=4))
+
 ##
 # push_message
 ##
 def push_message(file_path: str, token: str) -> bool:
-    logger = logging.getLogger('upload_file')
-    logger.debug(f'Uploading file {file_path} started')
-    service_url = config.endpoint + '/' + config.api_version + '/compliance-network/documents'
+    filename = os.path.basename(file_path)
+    file_extension = get_file_extension(filename)
+
+    console_message_value(Messages.UPLOADING_FILE.value, filename)
+
     base64_contents = read_file_to_base64(file_path)
     if base64_contents is None:
-        log_console_and_log_debug(f'Could not read file {file_path} maybe being used by another process')
+        console_error(f'{Messages.COULD_NOT_READ_FILE} {filename} maybe being used by another process.')
         return False
+
+# TODO: Working here - compating with delta-push.py
+    service_url = config.endpoint + '/' + config.api_version + '/compliance-network/documents'
     file_name = os.path.basename(file_path)
     file_extension = file_name.split(".")[-1]
     content_type = get_content_type_from_file_extension(file_extension)
@@ -60,19 +82,7 @@ def push_message(file_path: str, token: str) -> bool:
                       x_correlationId=x_correlationId,
                       x_originSystemId=x_originSystemId)
     
-    if "success" in result and result["success"] == True:
-        log_console_and_log_debug(f'File {file_path} uploaded with x-correlationId: {x_correlationId}')
-        log_console_and_log_debug(f'Received transactionId {result["data"]["transactionId"]}')
-        if config.save_out_history:
-            history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
-            create_folder_if_no_exists(history_folder_for_file)
-            move_file(src_path=file_path, dst_folder = history_folder_for_file)
-        else:
-            delete_file(file_path)  
-    else:
-        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
-        logger.error(json.dumps(result, indent=4))
-        print(json.dumps(result, indent=4))
+    after_call_service(result, file_path)
 
 ##
 # push_messages
@@ -86,20 +96,22 @@ def push_messages(token:str):
 # push_messges_interval
 ##
 def push_messges_interval(token):
-    number_of_poolings = 0
+    poolings_with_this_token = 0
     try:
         while True:
-            if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
+            if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
+                console_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
                 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-                logging.info('Requested new auth token: ' + token)
-                number_of_poolings = 0
-            push_messages(token)
-            number_of_poolings+=1
-            time.sleep(config.polling_interval)  # wait for x sec
+                poolings_with_this_token = 0
+            if token:
+                push_messages(token)
+                poolings_with_this_token+=1
+                console_wait_indicator(config.polling_interval)
+            else:
+                log_could_not_get_token()
+                break
     except KeyboardInterrupt:
-        log_console_message("Exiting program by user interrupt...")
-        logging.info ('Exiting program by user interrupt...')
-
+        console_error(Messages.EXIT_BY_USER_REQUEST.value)
 ##
 # Main - Application starts here
 ##
@@ -108,36 +120,22 @@ config = command_line_arguments_to_cn_push_configuration(args)
 
 if config.print_app_name:
     ascii_art_cn_push()
-if not config.app_secret:
-    config.app_secret = getpass.getpass("App secret: ")
-if not config.out_folder:
-    config.out_folder = os.path.join(os.getcwd(), config.app_key, DEFAULT_OUT_FOLDER_NAME)
-if not config.out_folder_history:
-    config.out_folder_history = os.path.join(os.getcwd(), config.app_key, DEFAULT_OUT_FOLDER_HISTORY_NAME)
-if not config.log_folder:
-    config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
-if config.keep_alive:
-    if not config.polling_interval:
-        config.polling_interval =  DEFAULT_POLLING_INTERVAL_SECONDS
-if not is_valid_url(config.endpoint):
-    log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
-    sys.exit(0)
 
-set_logging()
-log_app_cn_push_starting(config)
+config = set_config_defaults(config)
+set_logging(APP_NAME, config)
+console_config_settings(config)
+
 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
 # Do we have a token? If so we can proceed
 if token:
-    logging.debug('Authentication token: %s', token)
     create_folder_if_no_exists(config.out_folder)
     if config.save_out_history:
         create_folder_if_no_exists(config.out_folder_history)
     if config.keep_alive:
-        print ('Keep alive mode is on. Press cmd+c or ctrl+c to exit...')
+        console_info (Messages.KEEP_ALIVE_IS_ON.value)
         push_messges_interval(token)
     else:
         push_messages(token)
 else:
-    log_could_not_get_token()
-
-log_app_ending("Compliance newtwork api push")
+    console_error(Messages.CAN_NOT_GET_TOKEN.value)
+console_log("Compliance Network api push")
