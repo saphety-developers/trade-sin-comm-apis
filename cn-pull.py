@@ -7,22 +7,19 @@ import time
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_cn_pull
 from apis.cn_copai import get_cn_coapi_token, cn_get_notifications
+from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_message_value, console_wait_indicator
 from common.file_handling import *
 from common.common import *
+from common.messages import Messages
+from common.string_handling import anonymize_string
 
-DEFAULT_IN_FOLDER_NAME = 'in'
-DEFAULT_LOG_FOLDER_NAME = 'log'
-DEFAULT_IN_FOLDER_HISTORY_NAME = 'in_history'
 APP_NAME = 'cn-pull'
 DEFAULT_PREFETCH_QUANTITY = 2
 DEFAULT_WAIT_BLOCK_NOTIFICTION_TIMEOUT = 60
 logger: logging.Logger
 config: Configuration
 
-def set_logging():
-    create_folder_if_no_exists(config.log_folder)
-    log_file_path=get_log_file_path(APP_NAME, config.log_folder)
-    configure_logging(log_file_path, config.log_level)
 
 def save_notification(notification):
     logger = logging.getLogger('save_notification')
@@ -55,6 +52,10 @@ def pull_messages(token:str):
     result = cn_get_notifications(service_url, token, wait_timeout=config.wait_block_notification_timeout, prefetch_quantity=config.prefetch_quantity)
     #print(json.dumps(result, indent=4))
     #json_response = json.loads(result)
+    if result is None:
+        console_error(f'{Messages.ERROR_DOWNLOADING_MESSAGE.value}')
+        return
+    
     has_notifications_to_save = "data" in result and result["data"] is not None and len(result["data"]) > 0
     if not has_notifications_to_save:
             if "data" in result and result["data"] is not None:
@@ -78,18 +79,21 @@ def pull_messages(token:str):
 # pull_messges_interval
 #
 def pull_messges_interval(token):
-    number_of_poolings = 0
+    poolings_with_this_token = 0
     try:
         while True:
-            if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
+            if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
+                console_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
                 token =  get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-                logging.info('Requested new auth token: ' + token)
-            pull_messages(token)
-            number_of_poolings+=1
-            time.sleep(config.polling_interval)  # wait for x sec
+            if token:
+                pull_messages(token)
+                poolings_with_this_token+=1
+                console_wait_indicator(config.polling_interval)
+            else:
+                log_could_not_get_token()
+                break
     except KeyboardInterrupt:
-        log_console_and_log_debug("Exiting program by user interrupt...")
-        logging.info ('Exiting program by user interrupt...')
+        console_and_log_error_message(Messages.EXIT_BY_USER_REQUEST.value)
 
 def set_in_folder():
     in_dir = os.path.join(os.getcwd(), 'in')
@@ -99,42 +103,31 @@ def set_in_folder():
 # Main - Application starts here
 ##
 args = parse_args_for_cn_pull()
-config = command_line_arguments_to_cn_pull_configuration(args)
+#config = command_line_arguments_to_cn_pull_configuration(args)
+config = command_line_arguments_to_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_cn_pull()
-if not config.app_secret:
-    config.app_secret = getpass.getpass("App secret: ")
-if not config.in_folder:
-    config.in_folder = os.path.join(os.getcwd(), config.app_key, DEFAULT_IN_FOLDER_NAME)
-if not config.in_history:
-    config.in_history = os.path.join(os.getcwd(), config.app_key, DEFAULT_IN_FOLDER_HISTORY_NAME)
-if not config.log_folder:
-    config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
-if not is_valid_url(config.endpoint):
-    log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
-    sys.exit(0)
+config = set_config_defaults(config)
+
 if not is_valid_positive_integer(config.prefetch_quantity):
     config.prefetch_quantity = DEFAULT_PREFETCH_QUANTITY
 if not is_valid_positive_integer(config.wait_block_notification_timeout):
     config.wait_block_notification_timeout = DEFAULT_WAIT_BLOCK_NOTIFICTION_TIMEOUT
 
-set_logging()
+set_logging(APP_NAME, config)
 
-log_app_cn_pull_starting(config)
-#print (config)
+console_config_settings(config)
 token = get_cn_coapi_token (config.endpoint + '/oauth/token', config.app_key, config.app_secret)
-# Do we have a token? If so we can proceed
 if token:
-    logging.debug('Authentication token: %s', token)
     create_folder_if_no_exists(config.in_folder)
     if config.in_history:
         create_folder_if_no_exists(config.in_history)
     if config.keep_alive:
-        print ('Keep alive mode is on. Press cmd+c or ctrl+c to exit...')
+        console_info (Messages.KEEP_ALIVE_IS_ON.value)
         pull_messges_interval(token)
     else:
         pull_messages(token)
 else:
-    log_could_not_get_token()
-log_app_ending()
+    console_error(Messages.CAN_NOT_GET_TOKEN.value)
+log_app_ending(APP_NAME)

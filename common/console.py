@@ -114,6 +114,10 @@ def console_config_settings(config: Configuration):
     #save in history
     if (config.in_history):
         console_message_value(Messages.SAVING_HISTORY_TO.value, os.path.normpath(config.in_history))
+    #delete sent files
+    if (config.danger_do_not_delete_sent_files):
+        console_error(Messages.DANGER_DO_NOT_DELETE_SENT_FILES.value)
+    #log folder
     console_message_value(Messages.LOGGING_SET_TO.value, os.path.normpath(config.log_folder))
 
 def console_delta_notification (notification):
@@ -150,3 +154,17 @@ def console_wait_indicator(interval):
       print (counter_readable, end='\r')
     time.sleep(1)
     remaining_time -= 1
+
+def console_app_ending(app_name: str, config: Configuration):
+    end_time = time.time()
+    elapsed_time = end_time - config.app_start_time
+    print(f"Application was up for: {elapsed_time:.2f} seconds.")
+    _console_message(f'{app_name} ending.')
+
+
+def console_trade_notification (trade_message):
+    console_message_value(Messages.ID.value, trade_message["ResultData"]["MessageId"])
+    console_message_value(Messages.SENDER.value, trade_message["ResultData"]["Sender"])
+    console_message_value(Messages.RECEIVER.value, trade_message["ResultData"]["Receiver"])
+    console_message_value(Messages.CONTENT_TYPE.value, trade_message["ResultData"]["ContentType"])
+

@@ -2,7 +2,7 @@ import logging
 import os
 import base64
 from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
-from common.console import console_config_settings, console_error, console_info, console_wait_indicator
+from common.console import console_config_settings, console_error, console_info, console_trade_notification, console_wait_indicator
 from common.file_handling import *
 from common.common import *
 from common.ascii_art import ascii_art_trade_pull
@@ -18,8 +18,11 @@ def save_notification(result):
     fileName = result["ResultData"]["Filename"]
     messageId = result["ResultData"]["MessageId"]
     filePathAndName = os.path.join(config.in_folder, fileName)
+    
     save_file(filePathAndName, data)
-    log_console_and_log_debug(f"Downloaded {messageId} message file to {filePathAndName}")
+    console_trade_notification(result)
+    console_message_value('Saved to:', fileName)
+
     if config.save_in_history:
         history_folder_for_file = append_date_time_subfolders(config.in_history)
         create_folder_if_no_exists(history_folder_for_file)

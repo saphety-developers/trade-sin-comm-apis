@@ -1,7 +1,7 @@
 import logging, os, json, uuid
 import xml.etree.ElementTree as ET
 from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
-from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_wait_indicator
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_message_value, console_wait_indicator
 from common.messages import Messages
 from common.string_handling import anonymize_string, base64_to_xml
 from common.xml.sbdh import StandardBusinessDocumentHeader

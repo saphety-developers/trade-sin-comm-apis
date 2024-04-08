@@ -84,6 +84,53 @@
         ],
         "console": "integratedTerminal",
         "justMyCode": true
+      },
+      {
+        "name": "SIN - Pull",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "sin-pull.py",
+        "args": [
+          "--user=jorge",
+          "--passwd=jorge",
+          "--endpoint=sin-int",
+          "--include-read",
+          "--log-level=debug",
+          "--save-in-history",
+          "--polling-interval=20",
+          "--in-folder=C:\\tmp\\messaging-test\\jorge\\in",
+          "--in-folder-history=C:\\tmp\\messaging-test\\jorge\\history\\in",
+          "--log-folder=C:\\tmp\\messaging-test\\jorge\\log",
+          "--start-date=2024-01-01",
+          "--end-date=2024-03-31",
+          "--destination-entity-code=ESB95922688",
+          "--save-in-history"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
+      },
+      {
+        "name": "Delta - Pull",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "delta-pull.py",
+        "args": [
+          "--app-key=3P9Fx2J4RPmFfJPe9tGlIUkUwcZF7eIX",
+          "--app-secret=jbdNUUADmNfRCMAt",
+          "--tax-ids=03386690170",
+          "--keep-alive",
+          "--polling-interval=800",
+          "--endpoint=delta-qa",
+          "--log-level=debug",
+          "--save-in-history",
+          "--polling-interval=20",
+          "--in-folder=C:\\tmp\\messaging-test\\IT03386690170\\in",
+          "--in-folder-history=C:\\tmp\\messaging-test\\IT03386690170\\history\\in",
+          "--log-folder=C:\\tmp\\messaging-test\\IT03386690170\\log",
+          "--do-not-acknowledge-notifications"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": true
       }
     ]
   }

@@ -21,6 +21,7 @@ class Messages(Enum):
     PUSHING_FILES_TO = "Pushing files to:"
     LOGGING_SET_TO = "Logging set to:"
     SAVING_HISTORY_TO = 'Saving history to:'
+    DANGER_DO_NOT_DELETE_SENT_FILES = "!!Danger!!! Sent files wil not be deleted - Possible loop on sent files!"
     LISTENING_NOTIFICATIONS_AT = "Listening notifications at:"
     SAVING_INCOMMING_MESSAGES_TO = "Saving incoming messages to:"
     COULD_NOT_PARSE_XML_FILE = "Could not parse XML from file"
@@ -38,4 +39,10 @@ class Messages(Enum):
     TAX_ID = "Tax id"
     FORMAT_ID = "Format id"
     MESSAGE = "Message"
+    CONTENT_TYPE = "Content type"
+    SENDER = "Sender"
+    RECEIVER = "Receiver"
     NO_MESSAGES_TO_PULL = "No messages to pull"
+    HTTP_ERROR_GETING_TOKEN = "Could not retrieve token. HTTP error"
+    HTTP_ERROR_GETING_MESSAGE = "Could not retrieve message. HTTP error"
+    ERROR_DOWNLOADING_MESSAGE= "Could not retrieve message"

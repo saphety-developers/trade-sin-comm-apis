@@ -7,11 +7,13 @@ from common.ascii_art import ascii_art_delta_pull
 from apis.cn_copai import get_cn_coapi_token
 from apis.delta_copai import delta_get_notifications, delta_acknowledged_notification
 from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
-from common.console import console_config_settings, console_delta_notification, console_error, console_info, console_wait_indicator
+from common.console import console_app_ending, console_config_settings, console_delta_notification, console_error, console_info, console_message_value, console_wait_indicator
 from common.file_handling import *
 from common.string_handling import *
 from common.common import *
 from common.messages import Messages
+from common.xml.ubl_namespaces import UBL_NAMESPACES_PREFIXES
+from common.xml.xpath_helper import XPATHelper
 
 APP_NAME = 'delta-pull'
 DEFAULT_PAGE_QUANTITY = 20
@@ -45,6 +47,84 @@ def save_notification(notification):
         create_folder_if_no_exists(history_folder_for_file)
         historyFilePathAndName = os.path.join(history_folder_for_file, filename)
         save_text_to_file(historyFilePathAndName, ba64decode)
+    #
+    # save docuemnt reference <cac:DocumentReference> to its own files
+    xml_app_response = None
+    result = string_to_xml (ba64decode)
+    if isinstance(result, ET.Element):
+        xml_app_response = result
+    else:
+        console_error(f"{Messages.COULD_NOT_DECODE_OR_PARSE_XML.value} {result}")
+        return False
+    # get the document reference
+    document_references_xpaths = XPATHelper.get_xpaths_for_property('APPLICATION_RESPONSE', 'DocumentReferences')
+    document_references = XPATHelper.get_elements_by_xpaths (xml_app_response, document_references_xpaths, UBL_NAMESPACES_PREFIXES)
+
+# Document reference sample - with links to the content ( not base 64)
+# <cac:DocumentReference>
+#  <cbc:ID>FqPnf6ru(...)dWOaB4xJCS0b_biQQsLYJtmXt1jS3</cbc:ID>
+#  <cbc:DocumentTypeCode>LegalCleared</cbc:DocumentTypeCode>
+#  <cac:Attachment>
+#    <cac:ExternalReference>
+#      <cbc:URI schemeID="LegalCleared">https://qa-regional-einvoicing-api-emea.sovos.com/download/api/v1/download/FqP(...)jS3/plain</cbc:URI>
+#      <cbc:MimeCode>application/xml</cbc:MimeCode>
+#      <cbc:FileName>ClearedInvoice.xml</cbc:FileName>
+#    </cac:ExternalReference>
+#  </cac:Attachment>
+#</cac:DocumentReference>
+#
+# Sample with base64 content
+#<cac:DocumentReference>
+#  <cbc:ID>FqPnf6ruB3PAUQ(...)5BfptMNKblJviHYcpHm</cbc:ID>
+#  <cbc:DocumentTypeCode>LegalCleared</cbc:DocumentTypeCode>
+#  <cac:Attachment>
+#    <cbc:EmbeddedDocumentBinaryObject mimeCode="application/xml">PD94b(...)xldHRyb25pY2E+</cbc:EmbeddedDocumentBinaryObject>
+#  </cac:Attachment>
+#</cac:DocumentReference>
+    # if docuemnt_references is not None as has elements, iterate int he elements and print <cbc:ID> content
+    for idx, document_reference_element in enumerate(document_references):
+        console_message_value("Reference Id:", document_reference_element.find('cbc:ID', UBL_NAMESPACES_PREFIXES).text)
+        # in the docuemnt reference element, find the cac:Attachment/cac:ExternalReference/cbc:FileName and print its content
+        attachment_elements = document_reference_element.findall('cac:Attachment', UBL_NAMESPACES_PREFIXES)
+        for attachment_element in attachment_elements:
+
+            # IF cac:ExternalReference exists in cac:Attachment then we have a link to a document
+            external_reference_element = attachment_element.find('cac:ExternalReference', UBL_NAMESPACES_PREFIXES)
+            # IF cac:EmbeddedDocumentBinaryObject exists in cac:Attachment then we have the document content in base64
+            embeded_document_element = attachment_element.find('cbc:EmbeddedDocumentBinaryObject', UBL_NAMESPACES_PREFIXES)
+            # Get the content from an external reference
+            if external_reference_element is not None:
+                file_name_element = external_reference_element.find('cbc:FileName', UBL_NAMESPACES_PREFIXES)
+                file_uri = external_reference_element.find('cbc:URI', UBL_NAMESPACES_PREFIXES)
+                if file_name_element is not None:
+                    file_name = file_name_element.text
+                    console_message_value("File Name:", file_name)
+                if file_uri is not None:
+                    uri = file_uri.text
+                    console_message_value("URI:", uri)
+            if embeded_document_element is not None:
+                document_type_code_element = document_reference_element.find('cbc:DocumentTypeCode', UBL_NAMESPACES_PREFIXES)
+                file_name_attach = document_type_code_element.text
+                
+                filePathAndName_attach = os.path.join(config.in_folder, file_name_attach)
+
+                content_to_save = embeded_document_element.text
+                ba64decode = base64.b64decode(content_to_save)
+                attachment_mime_code = embeded_document_element.get('mimeCode')
+                console_message_value("Attachment Mime Code:", attachment_mime_code)
+                console_message_value("Embedded Document:", file_name_attach)
+
+                if attachment_mime_code == 'application/pdf':
+                    save_file(filePathAndName_attach, ba64decode)                
+                else:
+                    #convert to string utf-8 ans save as text
+                    ba64decode = ba64decode.decode('utf-8')
+                    save_text_to_file(filePathAndName_attach, ba64decode)
+                
+    #
+    #
+
+
     if config.acknowledge_notifications:
         service_url = config.endpoint + '/' + config.api_version + '/notifications'
         response = delta_acknowledged_notification(service_url=service_url, country_code='PT', token=token, notification_id=notification["notificationId"])
@@ -157,4 +237,4 @@ if token:
         pull_messages(token)
 else:
     console_error(Messages.CAN_NOT_GET_TOKEN.value)
-log_app_ending(APP_NAME)
+console_app_ending(APP_NAME, config)

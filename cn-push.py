@@ -5,15 +5,16 @@ import uuid
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_cn_push
 from apis.cn_copai import get_cn_coapi_token, cn_send_document
-from common.configuration_handling import set_config_defaults
-from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_wait_indicator
+from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_log, console_message_value, console_wait_indicator
 from common.file_handling import *
 from common.common import *
+from common.messages import Messages
 from common.string_handling import anonymize_string, get_string_from_array_of_strings
 
 APP_NAME = 'cn-push'
 # defne a constant that is an array of strings.
-AVAILABLE_FORMAT_IDS = ['FR-UBL-1.0','IT-SCI-1.0','IT-FatturaPa-1.0','SA-SCI-1.0','SA-UBL-1.0','RO-SCI-1.0']
+AVAILABLE_FORMAT_IDS = ['FR-UBL-1.0','IT-SCI-1.0','IT-FatturaPa-1.0','SA-SCI-1.0','SA-UBL-1.0','RO-SCI-1.0','RO-UBL-1.0']
 AVAILABLE_DOC_TYPES = ['Invoice','DebitNote','CreditNote']
 logger: logging.Logger
 
@@ -35,9 +36,15 @@ def after_call_service (result, file_path):
             if config.save_out_history:
                 history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
                 create_folder_if_no_exists(history_folder_for_file)
-                move_file(src_path=file_path, dst_folder = history_folder_for_file)
+                # move or copy according to the configuration --danger_do_not_delete_sent_files
+                if config.danger_do_not_delete_sent_files:
+                    copy_file(src_path=file_path, dst_folder = history_folder_for_file)
+                else:
+                    move_file(src_path=file_path, dst_folder = history_folder_for_file)
             else:
-                delete_file(file_path)  
+                # delete the file according to the configuration --danger_do_not_delete_sent_files
+                if not config.danger_do_not_delete_sent_files:
+                    delete_file(file_path)  
         else:
             console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
             print(json.dumps(result, indent=4))
@@ -71,6 +78,10 @@ def push_message(file_path: str, token: str) -> bool:
         doc_type_id = config.doc_type_id
     x_correlationId = str(uuid.uuid4())
     x_originSystemId = 'My-Origin-System-' + file_name
+
+    company_sub_division = None
+
+    console_message_value('x-correlationId',x_correlationId)
     
     result = cn_send_document (service_url=service_url,
                       token=token,
@@ -79,6 +90,7 @@ def push_message(file_path: str, token: str) -> bool:
                       file_name=file_name,
                       format_id=format_id,
                       document_type=doc_type_id,
+                      company_sub_division=company_sub_division,
                       x_correlationId=x_correlationId,
                       x_originSystemId=x_originSystemId)
     
@@ -116,7 +128,7 @@ def push_messges_interval(token):
 # Main - Application starts here
 ##
 args = parse_args_for_cn_push()
-config = command_line_arguments_to_cn_push_configuration(args)
+config = command_line_arguments_to_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_cn_push()

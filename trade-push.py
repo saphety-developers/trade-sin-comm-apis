@@ -1,27 +1,38 @@
-import getpass
 import logging
 import os
-import sys
-import time
 import json
 from common.configuration import Configuration
 from common.ascii_art import ascii_art_trade_push
 from apis.trade_messaging_api import get_trade_messaging_token, receive_message
+from common.configuration_handling import command_line_arguments_to_api_configuration, set_config_defaults
+from common.console import console_config_settings, console_error, console_error_message_value, console_info, console_wait_indicator
 from common.file_handling import *
 from common.common import *
+from common.string_handling import anonymize_string
 
-DEFAULT_OUT_FOLDER_NAME = 'out'
-DEFAULT_LOG_FOLDER_NAME = 'log'
-DEFAULT_OUT_FOLDER_HISTORY_NAME = 'out_history'
-DEFAULT_POLLING_INTERVAL_SECONDS = 30 # seconds
 APP_NAME = 'trade-push'
 logger: logging.Logger
 config: Configuration
 
-def set_logging():
-    create_folder_if_no_exists(config.log_folder)
-    log_file_path=get_log_file_path(APP_NAME, config.log_folder)
-    configure_logging(log_file_path, config.log_level)
+
+def after_call_service (result, file_path):
+    logger = logging.getLogger('after_call_service')
+    filename = os.path.basename(file_path)
+
+    if result["IsValid"] == True:
+        console_message_value(Messages.FILE_UPLOADED_SUCESS.value,filename)
+        if config.save_out_history:
+            history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
+            create_folder_if_no_exists(history_folder_for_file)
+            move_file(src_path=file_path, dst_folder = history_folder_for_file)
+        else:
+            delete_file(file_path) 
+    else:
+        console_error_message_value(Messages.SERVER_ERROR_UPLOADING_FILE.value, filename)
+        print(json.dumps(result, indent=4))
+        logger.error(json.dumps(result, indent=4))
+
+
 ##
 # push_message
 ##
@@ -42,20 +53,11 @@ def push_message(file_path: str, token: str) -> bool:
                       content_type=content_type,
                       file_in_base64=base64_contents,
                       file_name=file_name,
-                      sender_partner_id=config.user,
+                      sender_partner_id=config.app_key,
                       header_x_operational_endpoint_partner_id= config.header_x_operational_endpoint_partner_id)
-    if result["IsValid"] == True:
-        log_console_and_log_debug(f'File {file_path} uploaded')
-        if config.save_out_history:
-            history_folder_for_file = append_date_time_subfolders(config.out_folder_history)
-            create_folder_if_no_exists(history_folder_for_file)
-            move_file(src_path=file_path, dst_folder = history_folder_for_file)
-        else:
-            delete_file(file_path)
-
-    else:
-        log_console_and_log_debug(f'Error uploading file {file_path} see server response log for details...')
-        logger.error(json.dumps(result, indent=4))
+    
+    after_call_service(result, file_path)
+    
 
 ##
 # push_messages
@@ -69,55 +71,40 @@ def push_messages(token:str):
 # push_messges_interval
 ##
 def push_messges_interval(token):
-    number_of_poolings = 0
+    poolings_with_this_token = 0
     try:
         while True:
-            if (is_required_a_new_auth_token(config.polling_interval, number_of_poolings)):
-                token = get_trade_messaging_token(config.endpoint + '/GetTokenFromLogin', config.user, config.password)
-                logging.info('Requested new auth token: ' + token)
-                number_of_poolings = 0
+            if (token is None or is_required_a_new_auth_token(config.polling_interval, poolings_with_this_token)):
+                token = get_trade_messaging_token(config.endpoint + '/GetTokenFromLogin', config.app_key, config.app_secret)
+                console_message_value(Messages.REQUESTED_NEW_TOKEN.value, anonymize_string(token, '_'))
+                poolings_with_this_token = 0
             push_messages(token)
-            number_of_poolings+=1
-            time.sleep(config.polling_interval)  # wait for x sec
+            poolings_with_this_token+=1
+            console_wait_indicator(config.polling_interval)
     except KeyboardInterrupt:
-        log_console_message("Exiting program by user interrupt...")
-        logging.info ('Exiting program by user interrupt...')
+        console_error(Messages.EXIT_BY_USER_REQUEST.value)
 
 ##
 # Main - Application starts here
 ##
 args = parse_args_for_trade_push()
-config = command_line_arguments_to_configuration2(args)
+config = command_line_arguments_to_api_configuration(args)
 
 if config.print_app_name:
     ascii_art_trade_push()
-if not config.password:
-    config.password = getpass.getpass("Password: ")
-if not config.out_folder:
-    config.out_folder = os.path.join(os.getcwd(), config.user, DEFAULT_OUT_FOLDER_NAME)
-if not config.out_folder_history:
-    config.out_folder_history = os.path.join(os.getcwd(), config.user, DEFAULT_OUT_FOLDER_HISTORY_NAME)
-if not config.log_folder:
-    config.log_folder = os.path.join(os.getcwd(), DEFAULT_LOG_FOLDER_NAME)
-if config.keep_alive:
-    if not config.polling_interval:
-        config.polling_interval =  DEFAULT_POLLING_INTERVAL_SECONDS
-if not is_valid_url(config.endpoint):
-    log_console_message(f'Invalid endpoint provided: "{config.endpoint}"')
-    sys.exit(0)
 
-set_logging()
-log_app_trade_push_starting(config)
+config = set_config_defaults(config)
+set_logging(APP_NAME, config)
+console_config_settings(config)
 #print (config)
-token = get_trade_messaging_token(config.endpoint + '/GetTokenFromLogin', config.user, config.password)
-# Do we have a token? If so we can proceed
+token = get_trade_messaging_token(config.endpoint + '/GetTokenFromLogin', config.app_key, config.app_secret)
+
 if token:
-    logging.debug('Authentication token: %s', token)
     create_folder_if_no_exists(config.out_folder)
     if config.save_out_history:
         create_folder_if_no_exists(config.out_folder_history)
     if config.keep_alive:
-        print ('Keep alive mode is on. Press cmd+c or ctrl+c to exit...')
+        console_info (Messages.KEEP_ALIVE_IS_ON.value)
         push_messges_interval(token)
     else:
         push_messages(token)

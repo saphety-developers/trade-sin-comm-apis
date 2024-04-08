@@ -23,6 +23,14 @@ def anonymize_string(input_string, fill_char="*", max_length=50):
 
     return anonymized_string
 
+def string_to_xml(string):
+    try:
+        xml_element = ET.fromstring(string)
+        return xml_element
+    
+    except Exception as e:
+        return e
+
 def base64_to_xml(base64_string):
     try:
         decoded_data = base64.b64decode(base64_string).decode('utf-8')

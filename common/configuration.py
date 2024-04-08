@@ -3,6 +3,7 @@ class Configuration:
                  app_name = None,
                  log_level='info',
                  keep_alive=False,
+                 danger_do_not_delete_sent_files = False,
                  user='',
                  password='',
                  app_key='',
@@ -32,10 +33,12 @@ class Configuration:
                  prefetch_quantity = 10,
                  wait_block_notification_timeout = 60,
                  acknowledge_notifications = True,
-                 log_folder=''):
+                 log_folder='',
+                 app_start_time = None):
         self.log_level = log_level
         self.app_name = app_name
         self.keep_alive = keep_alive
+        self.danger_do_not_delete_sent_files = danger_do_not_delete_sent_files
         self.user = user
         self.password = password
         self.app_key = app_key
@@ -65,6 +68,7 @@ class Configuration:
         self.wait_block_notification_timeout = wait_block_notification_timeout
         self.acknowledge_notifications = acknowledge_notifications
         self.log_folder = log_folder
+        self.app_start_time = app_start_time
     def __str__(self):
         return (
         f"Configuration(log_level={self.log_level}, "
@@ -90,7 +94,6 @@ class Configuration:
         f"polling_interval='{self.polling_interval}', "
         f"endpoint='{self.endpoint}', "
         f"api_version='{self.api_version}', "
-        f"log_folder='{self.log_folder}', "
         f"include_read='{self.include_read}', "
         f"start_date='{self.start_date}', "
         f"destination_entity_code='{self.destination_entity_code}', "
@@ -98,9 +101,12 @@ class Configuration:
         f"format_id='{self.format_id}', "
         f"doc_type_id='{self.doc_type_id}', "
         f"prefetch_quantity='{self.prefetch_quantity}', "
-        f"wait_block_notification_timeout='{self.wait_block_notification_timeout}')"
-        f"acknowledge_notifications='{self.acknowledge_notifications}')"
+        f"wait_block_notification_timeout='{self.wait_block_notification_timeout}'"
+        f"acknowledge_notifications='{self.acknowledge_notifications}'"
         f"end_date='{self.end_date}'"
+        f"log_folder='{self.log_folder}'"
+        f"app_start_time='{self.app_start_time}'"
+        f"danger_do_not_delete_sent_files ='{self.danger_do_not_delete_sent_files}'"
         )
 
 class Configuration3:

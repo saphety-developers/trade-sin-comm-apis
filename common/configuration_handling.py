@@ -2,6 +2,7 @@ from argparse import Namespace
 import getpass
 import os
 import sys
+import time
 from common.common import is_valid_url
 from common.configuration import Configuration
 from common.api_endpoints import APIEndpoints
@@ -24,6 +25,13 @@ def command_line_arguments_to_api_configuration(args: Namespace) -> Configuratio
   config.keep_alive = args.keep_alive
   config.log_level = args.log_level
 
+ # probably this is not the best place to set this value, but this is tically called only once on app start
+  config.app_start_time = time.time()
+
+  if hasattr(args, 'danger_do_not_delete_sent_files'):
+    config.danger_do_not_delete_sent_files = args.danger_do_not_delete_sent_files
+  else:
+    config.danger_do_not_delete_sent_files = False
 
   if hasattr(args, 'use_romania_mock'):
     config.use_romania_mock = args.use_romania_mock

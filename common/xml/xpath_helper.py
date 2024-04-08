@@ -2,6 +2,9 @@
 
 class XPATHelper:
     XPATH_MAPPINGS = {
+        'APPLICATION_RESPONSE': {
+            'DocumentReferences':['./cac:DocumentResponse/cac:DocumentReference']
+        },
         'SCI': {
             'sender_vat': [
                                 "./cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='IdFiscaleIVA']",
@@ -65,3 +68,25 @@ class XPATHelper:
                 return result_element
 
         return result_element
+    
+    # Same as get_element_by_xpaths but returns a list of elements
+    @classmethod
+    def get_elements_by_xpaths(cls, xml_invoice_element, xpaths, namespaces):
+        """
+        Get all elements that match the given XPath expressions.
+
+        Args:
+            xml_invoice_element (xml.etree.ElementTree.Element): The XML element to search within.
+            xpaths (list): List of XPath expressions to search for.
+            namespaces (dict): Dictionary mapping namespace prefixes to namespace URIs.
+
+        Returns:
+            list: List of all elements that match any of the given XPath expressions.
+        """
+        result_elements = []
+
+        for xpath in xpaths:
+            elements = xml_invoice_element.findall(xpath, namespaces)
+            result_elements.extend(elements)
+
+        return result_elements

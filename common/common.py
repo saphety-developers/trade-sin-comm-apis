@@ -2,27 +2,18 @@ from argparse import Namespace
 import argparse
 import datetime 
 import logging
-import msvcrt
-import select
-import sys
 import time
 from urllib.parse import urlparse
 from common.configuration import Configuration, Configuration3
-from common.console import console_message_value
 from common.file_handling import create_folder_if_no_exists, get_log_file_path 
-from common.messages import MessageType
 import csv
 from io import StringIO
-import keyboard
-from common.messages import Messages
 
 
 def set_logging(app_name, config: Configuration):
     create_folder_if_no_exists(config.log_folder)
     log_file_path=get_log_file_path(app_name, config.log_folder)
     configure_logging(log_file_path, config.log_level)
-
-
 
 def command_line_arguments_to_configuration2(args: Namespace) -> Configuration:
   config = Configuration()
@@ -311,7 +302,7 @@ def log_app_sin_search_ending():
 
 # add a app_ ame parameter with the default value "Trade messaging api client"
     
-def log_app_ending(app_name: str = 'Trade messaging api client'):
+def log_app_ending(app_name: str):
     log_console_and_log_debug(f'{app_name} ending.')
 
 def log_could_not_get_token():
@@ -322,8 +313,8 @@ def parse_args_for_trade_push():
     parser = argparse.ArgumentParser(description='Trade messaging api client - push messages to network')
 
     # Add the arguments to the parser
-    parser.add_argument('--user', type=str, metavar='<partner id>', required=True, help='Trade partner Id')
-    parser.add_argument('--passwd', type=str, metavar='<passwd>', required=False, help='Password for queue comms on Trade')
+    parser.add_argument('--app-key', type=str, metavar='<partner id>', required=True, help='Trade partner Id')
+    parser.add_argument('--app-secret', type=str, metavar='<passwd>', required=False, help='Password for queue comms on Trade')
     parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='Trade endpoint to push messages to. Use alias for known environments: "int", "qa", "prd" or specify a custom endpoint...')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds betwwen pollings. Defaults to 480 (8 min.)')
@@ -374,6 +365,7 @@ def parse_args_for_cn_push():
     parser.add_argument('--format-id', type=str, default='SCI-1.0', required=False, choices=['IT-SCI-1.0','....'],  help='If not specified defaults to will be infered from file name..')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
+    parser.add_argument('--danger-do-not-delete-sent-files', action='store_true', help='DANGER: Will not delete the files after sending them!!! Use only in test mode')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
     parser.add_argument('--save-out-history', action='store_true', help='Backup files uploaded to the network')
     parser.add_argument('--out-folder-history', type=str, metavar='<upload history folder>', required=False, help='Defaults to <current folder>/<app-key>/out_history')
@@ -393,6 +385,7 @@ sample usage with all arguments:
                  --keep-alive 
                  --polling-interval 30
                  --out-folder "C:\messages_to_cn\ou" 
+                 --danger-do-not-delete-sent-files
                  --save-out-history 
                  --out-folder-history "C:\messages_to_cn\history\out" 
                  --log-level info 
@@ -470,6 +463,7 @@ def parse_args_for_delta_push():
     parser.add_argument('--company-branch',  metavar='<Company branch>', type=str, required=False,  help='Used for KSA outbound documents.')
     parser.add_argument('--use-romania-mock', action='store_true', help='Used for Romania outbound documents to simulate ANAF.')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
+    parser.add_argument('--danger-do-not-delete-sent-files', action='store_true', help='DANGER: Will not delete the files after sending them!!! Use only in test mode')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds between pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--out-folder', type=str, metavar='<pooling folder>', help='Defaults to <current folder>/<app-key>/out')
     parser.add_argument('--save-out-history', action='store_true', help='Backup files uploaded to delta')
@@ -608,9 +602,9 @@ def parse_args_for_sin_pull():
     parser = argparse.ArgumentParser(description='Invoice network - pull messages from network')
 
     # Add the arguments to the parser
-    parser.add_argument('--user', type=str, metavar='<user>', required=True, help='SIN username')
-    parser.add_argument('--passwd', type=str, metavar='<passwd>', required=False, help='Password for user')
-    parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='Trade endpoint to push messages to. Use alias for known environments: "sin-int", "sin-qa", "sin-prd" or specify a custom endpoint...')
+    parser.add_argument('--app-key', type=str, metavar='<user>', required=True, help='SIN username')
+    parser.add_argument('--app-secret', type=str, metavar='<passwd>', required=False, help='Password for user')
+    parser.add_argument('--endpoint', type=str, metavar='<url or alias>', required=True, help='SIN endpoint to push messages to. Use alias for known environments: "sin-int", "sin-qa", "sin-prd" or specify a custom endpoint...')
     parser.add_argument('--keep-alive', action='store_true', help='Keep running and pooling for files')
     parser.add_argument('--polling-interval', metavar='<seconds>', type=int, help='Interval in seconds betwwen pollings. Defaults to 480 (8 min.)')
     parser.add_argument('--include-read', action='store_true', help='Will pull messages already downloaded in the first poll. Defaults to false.')
@@ -631,8 +625,8 @@ sample usage:
   %(prog)s  --user someuser --passwd somepass --keep-alive --endpoint int
 
 sample usage with all arguments: 
-  %(prog)s    --user someuser
-                 --passwd somepass 
+  %(prog)s       --app-key someuser
+                 --aoo-secret somepass 
                  --endpoint https://doc-server-int.saphety.com/Doc.WebApi.Services 
                  --keep-alive 
                  --polling-interval 30

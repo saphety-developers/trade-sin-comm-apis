@@ -23,12 +23,20 @@ def list_files(directory) -> list:
     return filepaths
 
 def is_text(data):
-    try:
-        # Attempt to decode the data as UTF-8
-        data.decode('utf-8')
+    if isinstance(data, str):
+        # If the data is a string, consider it as text
         return True
-    except UnicodeDecodeError:
-        # If decoding fails, it's binary data
+    elif isinstance(data, bytes):
+        # If the data is bytes, check if it contains any non-ASCII characters
+        try:
+            data.decode('utf-8')
+            # If decoding succeeds, consider it as text
+            return True
+        except UnicodeDecodeError:
+            # If decoding fails, consider it as binary
+            return False
+    else:
+        # If the data is neither a string nor bytes, consider it as binary
         return False
 
 def get_next_non_colinging_filename(filepath):
@@ -89,6 +97,28 @@ def move_file(src_path, dst_folder):
 
     # Move the source file to the destination folder
     shutil.move(src_path, dst_filename)
+
+def copy_file(src_path, dst_folder):
+    """
+    copy a file from source path to destination folder with suffixes for duplicate filenames.
+    """
+    # Get the source file's basename and destination file's basename
+    src_filename = os.path.basename(src_path)
+    dst_filename = os.path.join(dst_folder, src_filename)
+
+    # Check if the destination file already exists
+    if os.path.exists(dst_filename):
+        # If it does, add a suffix to the filename and check for further conflicts
+        suffix = 1
+        while True:
+            dst_filename_parts = os.path.splitext(dst_filename)
+            dst_filename = f"{dst_filename_parts[0]} ({suffix}){dst_filename_parts[1]}"
+            if not os.path.exists(dst_filename):
+                break
+            suffix += 1
+
+    # Move the source file to the destination folder
+    shutil.copy(src_path, dst_filename)
 
 def delete_file(file_path):
     try:
@@ -152,6 +182,15 @@ def get_content_type_from_file_extension(file_extension):
     return content_types.get(file_extension.lower(), "application/octet-stream")
 
 def get_file_extension_from_content_type(content_type):
+
+    # for the cases where string is "text/html; charset=utf-8"
+    if content_type is None:
+        return "bin"
+    # Split the Content-Type string at the first ';' character
+    main_part = content_type.split(';', 1)[0]
+    content_type = main_part.strip()  # Remove leading/trailing whitespace
+
+
     """
     Based on the content-type return the 'suposed' sandard extension
     """
